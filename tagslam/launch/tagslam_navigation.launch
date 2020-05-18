@@ -1,0 +1,26 @@
+<launch>
+
+<include file="$(find thurobot)/launch/bringup.launch">
+  </include>
+
+<include file="$(find tagslam)/launch/apriltag_mynt_detector_node.launch">
+  </include>
+
+<include file="$(find mynteye_wrapper_d)/launch/mynteye_correct.launch">
+  </include>
+
+<include file="$(find tagslam)/launch/tagslam_mynteye.launch">
+    <!-- <arg name="camera_yaml" value="mynteye_stero.yaml"/>
+    <arg name="camera_poses_yaml" value="mynteye_stero_poses.yaml"/> -->
+  </include>
+  <!-- static_transform_publisher x y z yaw pitch roll frame_id child_frame_id period_in_ms --> 
+  <node pkg="tf" type="static_transform_publisher" name="room_to_tag0_link" args="-0.091 -0.405 2.916 1.622 -0.018 -3.119 /tag_0 /room_frame 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_to_cam0_link" args="0.045 0.305 -1.00 1.5707 0.00 0.00 /cam0 /robot_base 100"/>
+
+<!-- <node name="rgbd_costmap_node" pkg="tagslam" type="dwa_node"
+  args="$(find tagslam)/example/dwa_planning.yaml" clear_params="true">
+</node> -->
+
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(find tagslam)/example/tagslam_example.rviz" output="screen"/>
+
+</launch>

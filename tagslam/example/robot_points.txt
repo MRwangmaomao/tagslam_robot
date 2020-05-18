@@ -1,0 +1,56 @@
+  ########### based on cam0
+
+/cam0 /tag_0
+- Translation: [0.486, 0.071, 1.931]
+- Rotation: in Quaternion [0.678, 0.735, 0.002, 0.006]
+            in RPY (radian) [3.131, 0.005, 1.651]
+            in RPY (degree) [179.366, 0.277, 94.591]            
+
+/cam0 /tag_1
+- Translation: [0.388, 1.226, 1.938]
+- Rotation: in Quaternion [-0.701, 0.713, -0.016, -0.012]
+            in RPY (radian) [-3.135, -0.039, -1.589]
+            in RPY (degree) [-179.645, -2.235, -91.038]
+
+/cam0 /tag_2
+- Translation: [-1.086, 1.240, 1.926]
+- Rotation: in Quaternion [-0.707, 0.707, -0.003, -0.013]
+            in RPY (radian) [3.128, -0.023, -1.571]
+            in RPY (degree) [179.225, -1.327, -90.034]
+
+/cam0 /tag_3
+- Translation: [-0.712, 0.138, 1.945]
+- Rotation: in Quaternion [1.000, -0.006, -0.004, 0.000]
+            in RPY (radian) [3.141, 0.009, -0.011]
+            in RPY (degree) [179.955, 0.510, -0.632]
+
+
+/cam0 /tag_4
+- Translation: [-1.992, 0.096, 1.946]
+- Rotation: in Quaternion [1.000, -0.023, 0.004, 0.009]
+            in RPY (radian) [3.125, -0.008, -0.046]
+            in RPY (degree) [179.029, -0.486, -2.655]
+
+
+/cam0 /tag_5
+- Translation: [-0.712, 0.138, 1.945]
+- Rotation: in Quaternion [1.000, -0.006, -0.004, 0.000]
+            in RPY (radian) [3.141, 0.009, -0.011]
+            in RPY (degree) [179.955, 0.510, -0.632]
+
+
+/cam0 /tag_6
+- Translation: [0.453, -2.691, 1.929]
+- Rotation: in Quaternion [-0.692, 0.722, -0.006, 0.007]
+            in RPY (radian) [-3.123, 0.003, -1.613]
+            in RPY (degree) [-178.955, 0.166, -92.432]
+
+
+
+/cam0 /tag_7
+- Translation: [0.494, -3.569, 1.931]
+- Rotation: in Quaternion [0.704, 0.710, 0.004, 0.014]
+            in RPY (radian) [3.117, 0.014, 1.580]
+            in RPY (degree) [178.567, 0.784, 90.510]
+
+ 

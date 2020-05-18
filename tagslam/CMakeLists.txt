@@ -24,6 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf_conversions
   eigen_conversions
   image_transport
+  visualization_msgs
 )
 
 find_package(Eigen3 REQUIRED QUIET)
@@ -45,6 +46,7 @@ catkin_package(
 
 include_directories(
   include
+  ${PROJECT_SOURCE_DIR}/costmap/include
   ${Eigen_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${GTSAM_INCLUDE_DIRS}
@@ -112,6 +114,7 @@ src/profiler.cpp
 src/graph_updater.cpp
 src/gtsam_distortion/Cal3FS2.cpp
 src/gtsam_distortion/Cal3DS3.cpp
+
 )
 
 target_link_libraries(tagslam ${catkin_LIBRARIES}  ${Boost_LIBRARIES}
@@ -127,6 +130,11 @@ add_dependencies(tagslam_nodelet ${catkin_EXPORTED_TARGETS})
 # -- node ---
 add_executable(tagslam_node src/tagslam_node.cpp)
 target_link_libraries(tagslam_node tagslam ${catkin_LIBRARIES})
+
+# -- dwa nede --
+add_executable(dwa_node costmap/src/dwa_node.cpp costmap/src/dwa_planning.cpp) 
+target_link_libraries(dwa_node  ${catkin_LIBRARIES} ${OpenCV_LIBS})
+ 
 
 # -- rpp test ---
 add_executable(rpp_test src/rpp_test.cpp src/rpp.cpp src/quartic.cpp)
