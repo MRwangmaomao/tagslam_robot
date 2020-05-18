@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>flex_sync</name>
+  <version>1.0.0</version>
+  <description>sync package for variable number of topics</description>
+
+  <maintainer email="bernd.pfrommer@gmail.com">Bernd Pfrommer</maintainer>
+  <license>Apache</license>
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>message_generation</depend>
+  <depend>message_runtime</depend>
+</package>

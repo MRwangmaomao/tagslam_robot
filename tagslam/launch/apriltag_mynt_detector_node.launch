@@ -1,0 +1,15 @@
+<launch>
+  <arg name="black_border" default="1"/>
+  <arg name="image_mono" default="/mynteye/left/image_mono/compressed"/>
+  
+  <node pkg="apriltag_ros" type="apriltag_detector_node"
+	name="detector" output="screen">
+    <param name="refine" type="bool" value="true"/>
+    <param name="family" type="int" value="0"/>
+    <param name="type"   type="int" value="0"/>
+    <param name="black_border" type="int" value="$(arg black_border)"/>
+    <param name="image_transport" value="compressed"/> 
+    <remap from="~image/compressed" to="$(arg image_mono)"/> 
+  </node>
+
+</launch>

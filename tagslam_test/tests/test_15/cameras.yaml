@@ -1,0 +1,18 @@
+cam0:
+  camera_model: pinhole
+  intrinsics: [3291.825876, 3288.698371, 654.585950, 511.834746]
+  distortion_model: radtan
+  distortion_coeffs: [-0.091469, 4.182381, -0.001340, 0.004499, 0.000000]
+  resolution: [1280, 1024]
+  rostopic: /cam_sync/cam0/image_raw
+  tagtopic: /detector_0/tags
+  rig_body: grasp_lab
+cam1:
+  camera_model: pinhole
+  intrinsics: [3256.654940, 3254.623717, 648.390382, 539.262646]
+  distortion_model: radtan
+  distortion_coeffs: [0.010477, 2.580366, -0.002064, 0.000712, 0.000000] 
+  resolution: [1280, 1024]
+  rostopic: /cam_sync/cam1/image_raw 
+  tagtopic: detector_1/tags
+  rig_body: grasp_lab

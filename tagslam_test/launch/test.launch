@@ -1,0 +1,18 @@
+<launch>
+  <arg name="output" default="screen"/>
+  <arg name="test" default="1"/>
+  <arg name="test_dir" default="$(find tagslam_test)/tests/test_$(arg test)"/>
+  
+  <node pkg="tagslam" type="tagslam_node" name="tagslam"
+	clear_params="true"	output="screen">
+    <rosparam param="cameras" command="load" file="$(arg test_dir)/cameras.yaml"/>
+    <rosparam param="tagslam_config" command="load"
+	      file="$(arg test_dir)/tagslam.yaml"/>
+    <rosparam param="camera_poses" command="load"
+	      file="$(arg test_dir)/camera_poses.yaml"/>
+    <param name="bag_file" value="$(arg test_dir)/tag_detections.bag"/>
+    <param name="sync_queue_size" value="100"/>
+    <param name="exit_when_done" value="true"/>
+    <param name="playback_rate" value="100.0"/>
+  </node>
+</launch>

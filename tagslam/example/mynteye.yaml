@@ -1,0 +1,9 @@
+cam0:
+  camera_model: pinhole
+  intrinsics: [700.96905517578125000, 701.55493164062500000, 642.62341308593750000, 341.66424560546875000]
+  distortion_model: plumb_bob
+  distortion_coeffs: [0.000000, 0.000000, 0.000000, 0.000000, 0.000000]
+  resolution: [1280, 720]
+  rostopic: /mynteye/left/image_mono
+  tagtopic: /detector/tags
+  rig_body: rig

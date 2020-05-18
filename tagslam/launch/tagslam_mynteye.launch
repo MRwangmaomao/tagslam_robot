@@ -1,0 +1,25 @@
+<launch>
+  <arg name="data_dir" default="$(find tagslam)/example"/>
+  <arg name="config_dir" default="$(arg data_dir)"/>
+  
+  <arg name="camera_yaml" default="mynteye.yaml"/>
+  <arg name="camera_poses_yaml" default="mynteye_poses.yaml"/>
+  <arg name="tagslam_yaml" default="tagslam_mynteye.yaml"/>
+
+  <arg name="tagslam_config_file" default="$(arg config_dir)/$(arg tagslam_yaml)"/>
+  <arg name="calibration_file" default="$(arg config_dir)/$(arg camera_yaml)"/>
+  <arg name="camera_poses_file" default="$(arg config_dir)/$(arg camera_poses_yaml)"/>
+  <arg name="run_online" default="true"/>
+  <arg name="max_number_of_frames" default="20"/>
+
+  <node pkg="tagslam" type="tagslam_node" name="tagslam" clear_params="true"
+	output="screen">
+    <rosparam param="cameras" command="load" file="$(arg calibration_file)"/>
+    <rosparam param="tagslam_config" command="load" file="$(arg tagslam_config_file)"/>
+    <rosparam param="camera_poses" command="load" file="$(arg camera_poses_file)"/>
+    <param name="has_compressed_images" value="false"/>
+    <param name="playback_rate" value="100.0"/>
+    <!-- <param name="max_number_of_frames" value="$(arg max_number_of_frames)"/> -->
+  </node>
+
+</launch>
