@@ -11,18 +11,15 @@
 <include file="$(find mynteye_wrapper_d)/launch/mynteye_correct.launch">
   </include>
 
-<include file="$(find tagslam)/launch/tagslam_mynteye.launch">
-    <!-- <arg name="camera_yaml" value="mynteye_stero.yaml"/>
-    <arg name="camera_poses_yaml" value="mynteye_stero_poses.yaml"/> -->
+<include file="$(find tagslam)/launch/tagslam_mynteye.launch"> 
   </include>
+
   <!-- static_transform_publisher x y z yaw pitch roll frame_id child_frame_id period_in_ms --> 
   <node pkg="tf" type="static_transform_publisher" name="room_to_tag0_link" args="-0.091 -0.405 2.916 1.622 -0.018 -3.119 /tag_0 /room_frame 100"/>
-  <node pkg="tf" type="static_transform_publisher" name="cam0_to_robot_base_link" args="0.045 0.305 -1.00 1.5707 0.00 0.00 /cam0 /robot_base 100"/>
-  <node pkg="tf" type="static_transform_publisher" name="cam0_to_mynt_left_link" args="0.06 0.00 0.00 0.00 0.00 0.00 /cam0 mynt_link_frame 100"/>
-  <node pkg="tf" type="static_transform_publisher" name="robot_base_to_lidar_link" args="0.3 0 0.24 3.14 0 0 /robot_base /lidar_frame 100"/>
-  <node pkg="tf" type="static_transform_publisher" name="robot_base_to_base_link" args="0 0.07 0.6 1.5707 0 0  /robot_base /base_link 100"/>
-  <node pkg="tf" type="static_transform_publisher" name="robot_base_to_imu_link" args="0 0 0 0 0 0  /robot_base /imu_link  100"/>
-
+  <node pkg="tf" type="static_transform_publisher" name="cam0_to_robot_base_link" args="0.045 0.305 -1.00 0 0.00 0.00 /cam0 /robot_base 100"/> 
+  <node pkg="tf" type="static_transform_publisher" name="robot_base_to_lidar_link" args="0 0.3 0.24 4.7122 0 0 /robot_base /lidar_frame 100"/>
+  <!-- <node pkg="tf" type="static_transform_publisher" name="robot_base_to_base_link" args="0 0.07 0.6 1.5707 0 0  /robot_base /base_link 100"/> -->
+  <!-- <node pkg="tf" type="static_transform_publisher" name="robot_base_to_imu_link" args="0.25 0 0.297 0 0 0  /robot_base /imu_link  100"/> --> 
 
 <!-- <node name="rgbd_costmap_node" pkg="tagslam" type="dwa_node"
   args="$(find tagslam)/example/dwa_planning.yaml" clear_params="true">
