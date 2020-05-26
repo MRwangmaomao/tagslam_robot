@@ -1,0 +1,7 @@
+float64 goal_x
+float64 goal_y
+float64 goal_yaw
+float64 distance_tolerance
+float64 angle_tolerance
+---
+bool is_ok

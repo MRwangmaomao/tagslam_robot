@@ -5,7 +5,7 @@ tagslam_parameters:
 #                 slow (use iSAM2, but test for error and use full if error is large)
 #                 fast (iSAM2 only, no test for error)
 # default: slow
-  optimizer_mode: slow
+  optimizer_mode: fast
 # minimum angle [in degrees] between optical axis and tag surface
   minimum_viewing_angle: 12.0
 # number of incremental updates before running
@@ -77,25 +77,6 @@ bodies:
            x: 0.06597237
            y: 2.12383237
            z: 0.57288241
-         position_noise:
-           x: 1.00000000
-           y: 1.00000000
-           z: 1.00000000
-         rotation_noise:
-           x: 1.00000000
-           y: 1.00000000
-           z: 1.00000000
-     - id: 3
-       size: 0.09500000
-       pose:
-         position:
-           x: 0.35543252
-           y: 1.13511486
-           z: 2.46502936
-         rotation:
-           x: -1.45603490
-           y: 1.54795138
-           z: -0.34970997
          position_noise:
            x: 1.00000000
            y: 1.00000000
@@ -198,7 +179,26 @@ bodies:
          rotation_noise:
            x: 1.00000000
            y: 1.00000000
-           z: 1.00000000 
+           z: 1.00000000
+     - id: 8
+       size: 0.09500000
+       pose:
+         position:
+           x: 0.16301745
+           y: 0.19480800
+           z: 1.43307224
+         rotation:
+           x: 3.07831177
+           y: 0.00145903
+           z: 1.66893141
+         position_noise:
+           x: 1.00000000
+           y: 1.00000000
+           z: 1.00000000
+         rotation_noise:
+           x: 1.00000000
+           y: 1.00000000
+           z: 1.00000000
  - rig:
      is_static: false
      type: simple

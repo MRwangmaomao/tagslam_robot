@@ -18,12 +18,12 @@
   <node pkg="tf" type="static_transform_publisher" name="room_to_tag0_link" args="-0.091 -0.405 2.916 1.622 -0.018 -3.119 /tag_0 /room_frame 100"/>
   <node pkg="tf" type="static_transform_publisher" name="cam0_to_robot_base_link" args="0.045 0.305 -1.00 0 0.00 0.00 /cam0 /robot_base 100"/> 
   <node pkg="tf" type="static_transform_publisher" name="robot_base_to_lidar_link" args="0 0.3 0.24 4.7122 0 0 /robot_base /lidar_frame 100"/>
-  <!-- <node pkg="tf" type="static_transform_publisher" name="robot_base_to_base_link" args="0 0.07 0.6 1.5707 0 0  /robot_base /base_link 100"/> -->
+  <node pkg="tf" type="static_transform_publisher" name="cam0_to_mynteye_link" args="0.00 0.00 0.00 0.00 0.00 0.00 /cam0 /mynteye_link_frame 100"/>
   <!-- <node pkg="tf" type="static_transform_publisher" name="robot_base_to_imu_link" args="0.25 0 0.297 0 0 0  /robot_base /imu_link  100"/> --> 
 
-<!-- <node name="rgbd_costmap_node" pkg="tagslam" type="dwa_node"
-  args="$(find tagslam)/example/dwa_planning.yaml" clear_params="true">
-</node> -->
+<node name="dwa_node" pkg="path_plan_control" type="dwa_node"
+  args="$(find path_plan_control)/config/dwa_planning.yaml" clear_params="true" output="screen" >
+</node>
 <group if="$(arg open_rviz)"> 
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find tagslam)/example/tagslam_example.rviz" />
 </group> 

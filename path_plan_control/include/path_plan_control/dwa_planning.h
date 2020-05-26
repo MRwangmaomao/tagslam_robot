@@ -28,22 +28,36 @@ class DWAPlanning{
 public:
     DWAPlanning();
     ~DWAPlanning(void); 
+    
     void init(std::string config_file_path); 
     bool isArriveDestination();
-    bool move(long int robot_pose_id, Eigen::Matrix4d robot_pose, double & go_v, double & turn_v);
-    visualization_msgs::Marker dest_waypoint_pub();
+    bool move(double & go_v, double & turn_v);
+    // visualization_msgs::Marker dest_waypoint_pub();
+    
+    void setRobotPose(double x, double y, double yaw);
+    void setAngleThresh(double ang);
+    void setDistanceThresh(double dis); 
+    float getSimPeriod();
+    Eigen::Vector3d robot_waypoint_; // 机器人路标点
     
 private:
-    void getWayPoint();
-    void getRobotLocalization();
-    void setWayPointInCostmap();
-    void getAllWayPoints();
+    
+    // void getWayPoint();
+    // void getRobotLocalization();
+    // void setWayPointInCostmap();
+    // void getAllWayPoints();
     bool isArriveWayPoint(); 
     bool dwa_control(const cv::Mat& config_map);
-    void dwa_display(cv::Mat& config_map);
-    void drawArrow(cv::Mat& img, int start_x, int start_y, double theta, int arraw_length);
+    // void dwa_display(cv::Mat& config_map);
+    // void drawArrow(cv::Mat& img, int start_x, int start_y, double theta, int arraw_length);
     Eigen::VectorXd motion(Eigen::VectorXd &x, double v_head, double v_theta);
-    void calc_to_waypoint_cost();
+    // void calc_to_waypoint_cost();
+    double angle_err_calcu(double dest_angle, double current_angle);
+    
+    Eigen::Vector3d robot_pose_; // 机器人在世界中的位姿
+    double distance_threshold_;
+    double angle_threshold_; 
+
     double max_acc_x_;
     double max_acc_theta_;
     double max_yaw_rate_;
@@ -56,16 +70,13 @@ private:
     double sim_period_;
     bool aggressive_mode_;
     double go_v_;
-    double turn_v_;
-    double distance_threshold_;  
+    double turn_v_; 
     double delta_yam_rate_;
     double delta_speed_;
     int waypoint_id_;
     long int robot_pose_id_;
     bool first_flag_;  
-    Eigen::Matrix4d T_robot_waypoint_;
-    std::vector<double> robot_waypoint_; // 机器人路标点
-    Eigen::Matrix4d robot_pose_; // 机器人在世界中的位姿
+    Eigen::Matrix4d T_robot_waypoint_;  
     Eigen::Vector3d robot_wapoint_in_costmap_; //机器人在代价地图中的位置
 
 };

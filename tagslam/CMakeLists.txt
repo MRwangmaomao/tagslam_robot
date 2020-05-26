@@ -39,14 +39,26 @@ IF(OPENMP_FOUND)
  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_C_FLAGS}")
 ENDIF()
 
+# add_service_files(
+#   FILES
+#   nav_one_point.srv
+# )
+
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs
+#   geometry_msgs
+# )
+
 catkin_package(
 	INCLUDE_DIRS include
-	CATKIN_DEPENDS geometry_msgs rosgraph_msgs roscpp flex_sync nodelet
+  CATKIN_DEPENDS geometry_msgs rosgraph_msgs roscpp 
+  flex_sync nodelet message_generation
+
 	)
 
 include_directories(
-  include
-  ${PROJECT_SOURCE_DIR}/costmap/include
+  include 
   ${Eigen_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${GTSAM_INCLUDE_DIRS}
@@ -131,9 +143,9 @@ add_dependencies(tagslam_nodelet ${catkin_EXPORTED_TARGETS})
 add_executable(tagslam_node src/tagslam_node.cpp)
 target_link_libraries(tagslam_node tagslam ${catkin_LIBRARIES})
 
-# -- dwa nede --
-add_executable(dwa_node costmap/src/dwa_node.cpp costmap/src/dwa_planning.cpp) 
-target_link_libraries(dwa_node  ${catkin_LIBRARIES} ${OpenCV_LIBS})
+# # -- dwa nede --
+# add_executable(dwa_node costmap/src/dwa_node.cpp costmap/src/dwa_planning.cpp) 
+# target_link_libraries(dwa_node  ${catkin_LIBRARIES} ${OpenCV_LIBS})
  
 
 # -- rpp test ---

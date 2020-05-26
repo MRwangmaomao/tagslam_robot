@@ -29,6 +29,7 @@
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
+  <depend>message_generation</depend>
   <export>
     <nodelet plugin="${prefix}/nodelet_plugin.xml"/>
   </export>

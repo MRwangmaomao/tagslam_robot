@@ -1,4 +1,4 @@
-#include "costmap_lrgbd_ros/lrgbd2xz.h"
+#include "path_plan_control/lrgbd2xz.h"
 
 
 LRGBDCostMap::LRGBDCostMap(){

@@ -24,8 +24,8 @@
 #include <std_msgs/Bool.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
-#include "costmap_lrgbd_ros/lrgbd2xz.h"
-#include "costmap_lrgbd_ros/dwa_planning.h"
+#include "path_plan_control/lrgbd2xz.h"
+#include "path_plan_control/dwa_planning.h"
 
 // #include "costmap_lrgbd_ros/Arrived.h"
 
