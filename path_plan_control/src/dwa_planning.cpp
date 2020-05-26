@@ -21,12 +21,11 @@ void DWAPlanning::init(std::string config_file_path){
     foresee_ = fsSettings["foresee"];  
     region_foresee_ = fsSettings["region_foresee"];
     short_foresee_rate_ = fsSettings["short_foresee_rate"];
-    distance_threshold_ = fsSettings["distance_threshold"];
-    sim_period_ = fsSettings["sim_period"];
+    distance_threshold_ = fsSettings["distance_threshold"]; 
     max_yaw_rate_ = fsSettings["max_yaw_rate"];
     delta_yam_rate_ = fsSettings["delta_yam_rate"];
     delta_speed_ = fsSettings["delta_speed"];  
-    
+    sim_time_ =  fsSettings["sim_time"];
 
     std::cout << "\nConfigration the DWA parameters: " << std::endl << 
         "   max_acc_x: " << max_acc_x_ << std::endl << 
@@ -35,10 +34,10 @@ void DWAPlanning::init(std::string config_file_path){
         "   foresee: " << foresee_ << std::endl <<  
         "   region_foresee: " << region_foresee_ << std::endl << 
         "   distance_threshold: " << distance_threshold_ << std::endl << 
-        "   short_foresee_rate: " << short_foresee_rate_ << std::endl << 
-        "   sim_period: " << sim_period_ << std::endl  << 
+        "   short_foresee_rate: " << short_foresee_rate_ << std::endl <<  
         "   delta_yam_rate: " << delta_yam_rate_ << std::endl  << 
         "   delta_speed: " << delta_speed_ << std::endl  << 
+        "   sim_time: " << sim_time_ << std::endl  << 
         "   max_yaw_rate: " << max_yaw_rate_ << std::endl 
         << std::endl;
 } 
@@ -59,7 +58,7 @@ void DWAPlanning::setDistanceThresh(double dis){
 }
 
 float DWAPlanning::getSimPeriod(){
-    return sim_period_;
+    return sim_time_;
 }
 
 // 根据距离误差，后面还需要添加角度误差
@@ -88,12 +87,10 @@ bool DWAPlanning::isArriveDestination(){
     return true;
 }
  
-Eigen::VectorXd DWAPlanning::motion(Eigen::VectorXd &x, double v_head, double v_theta){
-    x(0) = v_head * sim_time_;
-    x(1) = 0;
-    x(2) = v_theta * sim_time_;
-    x(3) = v_head;
-    x(4) = v_theta;
+Eigen::Vector3d DWAPlanning::motion(Eigen::Vector3d x, double v_head, double v_theta){
+    x(0) += v_head * sim_time_ * sin(x(2));
+    x(1) += v_head * sim_time_ * cos(x(2));
+    x(2) = v_theta * sim_time_; 
     return x;
 }
 
@@ -157,14 +154,14 @@ bool DWAPlanning::dwa_control(const cv::Mat& config_map){
             angle_err = angle_err * -1.0; // 误差取绝对值
         if(!last_dir_flag) 
             turn_v_ = turn_v_ * -1.0; // 速度取绝对值
-        if(sim_period_ * max_yaw_rate_ < angle_err)
+        if(sim_time_ * max_yaw_rate_ < angle_err)
         {
             if(turn_v_ < max_yaw_rate_ - delta_yam_rate_) //缓慢加速
                 turn_v_ += delta_yam_rate_; 
             else
                 turn_v_ = max_yaw_rate_; // 饱和速度
         }else{
-        turn_v_ = angle_err * 1.0 / sim_period_; // 控制速度
+        turn_v_ = angle_err * 1.0 / sim_time_; // 控制速度
         }
         if(!dir_flag)  // 反向旋转
             turn_v_ = -1.0 * turn_v_;
@@ -175,19 +172,41 @@ bool DWAPlanning::dwa_control(const cv::Mat& config_map){
     // --------------------------------------------------------------------
     else{
         double max_weight_go_speed = 0, max_weight_yaw_speed = 0;
-        double 
+        std::cout << "distance_err: " << distance_err << ";" << std::endl;
+        double min_sim_dis = 10000;
+        double temp_go, temp_turn; 
+        double sim_dist = 0.0;
+        double last_go_v = go_v_;
+        
+        // 速度控制
         // 线速度空间进行采样
-        for(){
+        for(temp_go = -1.0* max_speed_; temp_go <= max_speed_; temp_go+=delta_speed_){
             // 角速度空间进行采样
-            for(){
-
+            for(temp_turn = -1.0 * max_yaw_rate_; temp_turn <= max_yaw_rate_; temp_turn+=delta_yam_rate_){
+                
+                Eigen::Vector3d sim_pose = motion(robot_pose_, temp_go, temp_turn); // 进行一次运动学模拟
+                sim_dist = sqrt((sim_pose(0) - robot_waypoint_(0))*(sim_pose(0) - robot_waypoint_(0)) +
+                            (sim_pose(1) - robot_waypoint_(1))*(sim_pose(1) - robot_waypoint_(1)));
+                // 更新最优值
+                if(sim_dist < min_sim_dis){
+                    go_v_ = temp_go;
+                    turn_v_ = temp_turn;
+                    min_sim_dis = sim_dist;
+                }
+                
             }
         }
-        
-        
 
+        // 加速度控制
+        if(last_go_v-go_v_ > max_acc_x_){ //减速过快
+            go_v_ = last_go_v - max_acc_x_;
+        }
+        else if(go_v_ - last_go_v > max_acc_x_){ // 增速过快
+            go_v_ = last_go_v + max_acc_x_;
+        }
+        else{
 
-
+        }  
     }
 
     return if_dwa_succ;

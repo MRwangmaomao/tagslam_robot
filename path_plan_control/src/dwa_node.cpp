@@ -25,6 +25,7 @@
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/PointCloud.h>
 #include <std_msgs/Bool.h>
+
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <path_plan_control/nav_one_point.h>
@@ -85,9 +86,9 @@ static void sleep_ms(unsigned int secs)
 
 }
 
-void stop_nav_sub(std_msgs::Bool::ConstPtr msg){
-    if(msg->data)
-        stop_nav_sub = Waiting;
+void stop_nav_sub(std_msgs::Bool::ConstPtr msg){ 
+        current_state = Waiting;
+        std::cout << "控制机器人停止导航:" << current_state <<  "  !" <<  std::endl;  
 }
 
 bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
@@ -125,7 +126,7 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
     // ------------------------------------------------------
     current_state = Running; //修改机器人状态
     dwa_planer.robot_waypoint_(0) =  req.goal_x;  // 更新目标路标点
-    dwa_planer.robot_waypoint_(1) =  req.goal_x;  
+    dwa_planer.robot_waypoint_(1) =  req.goal_y;  
     dwa_planer.robot_waypoint_(2) =  req.goal_yaw;  
     dwa_planer.setAngleThresh(req.angle_tolerance); // 更行定位容许误差
     dwa_planer.setDistanceThresh(req.distance_tolerance); // 更行角度容许误差
@@ -165,7 +166,6 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
         dwa_planer.setRobotPose(transform_room_robot.getOrigin().getX(), transform_room_robot.getOrigin().getY(), yaw);
           
         std::cout << "输出当前方位角" << yaw << ";  当前坐标:" << transform_room_robot.getOrigin().getX() << "," << transform_room_robot.getOrigin().getY() << ";" << std::endl;
-        
         // ------------------------------------------------------
         // 判断是否到达位置，并进行一次控制
         // ------------------------------------------------------
@@ -187,7 +187,7 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
             current_state = Waiting; // 到达目的地，当前状态为等待状态
         } 
         sleep_ms(sim_period);
-        // ros::spinOnce();
+        ros::spinOnce();
     } 
     pub_speed.linear.x = 0.0;
     pub_speed.linear.y = 0.0;
@@ -230,7 +230,7 @@ int main(int argc, char **argv){
     
     speed_pub = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 10);
 
-    stop_sub = nh.subscribe("stop_nav", stop_nav_sub);
+    stop_sub = nh.subscribe<std_msgs::Bool>("/stop_nav",10, &stop_nav_sub);
 
     ros::spin();
     ROS_INFO("shutting down!");

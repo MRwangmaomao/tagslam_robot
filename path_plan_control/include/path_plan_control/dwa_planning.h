@@ -50,7 +50,7 @@ private:
     bool dwa_control(const cv::Mat& config_map);
     // void dwa_display(cv::Mat& config_map);
     // void drawArrow(cv::Mat& img, int start_x, int start_y, double theta, int arraw_length);
-    Eigen::VectorXd motion(Eigen::VectorXd &x, double v_head, double v_theta);
+    Eigen::Vector3d motion(Eigen::Vector3d x, double v_head, double v_theta);
     // void calc_to_waypoint_cost();
     double angle_err_calcu(double dest_angle, double current_angle);
     
