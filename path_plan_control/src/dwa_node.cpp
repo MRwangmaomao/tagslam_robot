@@ -21,8 +21,9 @@
 #include <tf2_msgs/TFMessage.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h> 
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/Twist.h>
-#include <nav_msgs/Odometry.h>
+#include <nav_msgs/Odometry.h> 
 #include <sensor_msgs/PointCloud.h>
 #include <std_msgs/Bool.h>
 
@@ -41,6 +42,7 @@ Eigen::Matrix4d robot_dest;
 std::string robot_pose_topic = "/tagslam/odom/body_rig";
 std::string robot_dest_topic = "robot_dest";
 ros::Publisher speed_pub; 
+ros::Publisher path_pub;
 ros::Subscriber stop_sub;
 ros::ServiceServer nav_dest_point;
 ros::ServiceClient arm_move_motion_client;
@@ -103,7 +105,7 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
     geometry_msgs::Twist pub_speed;                 // 发送速度执行
     int sim_period = static_cast<int>(dwa_planer.getSimPeriod() * 1000);
      
-    std::cout << "sim_period：" <<  sim_period << " ms."<< std::endl;
+    std::cout << "sim_period： " <<  sim_period << " ms." << std::endl;
     // ------------------------------------------------------
     // 移动机械臂和kinect到达寻路状态
     // ------------------------------------------------------
@@ -112,7 +114,7 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
     if (arm_move_motion_client.call(arm_move_motion_srv))
     {
         // 注意我们的response部分中的内容只包含一个变量response，另，注>意将其转变成字符串
-        // ROS_INFO("Response from server: %d", arm_move_motion_srv.response.is_ok);
+        ROS_INFO("开始控制机械臂运动到寻路状态。");
     }
     else
     {
@@ -131,6 +133,26 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
     dwa_planer.setAngleThresh(req.angle_tolerance); // 更行定位容许误差
     dwa_planer.setDistanceThresh(req.distance_tolerance); // 更行角度容许误差
     
+    // ------------------------------------------------------
+    // 发布所有路标点
+    // ------------------------------------------------------
+    std::queue<Eigen::Vector3d> queue_waypoints;
+    std::vector<Eigen::Vector3d> path_all_waypoints = dwa_planer.getAllPathWaypoints();
+    geometry_msgs::PoseArray pub_path_waypoint;
+    pub_path_waypoint.header.frame_id = "/room_frame";
+    pub_path_waypoint.header.stamp = ros::Time::now();
+    for(int i = 0; i < path_all_waypoints.size(); i++){
+        geometry_msgs::Pose temp_pose;
+        temp_pose.position.x = path_all_waypoints[i](0);
+        temp_pose.position.y = path_all_waypoints[i](1);
+        temp_pose.position.z = 0;
+        temp_pose.orientation.w = cos((path_all_waypoints[i](2)+1.57)/2);
+        temp_pose.orientation.z = sin((path_all_waypoints[i](2)+1.57)/2);  
+        pub_path_waypoint.poses.push_back(temp_pose);
+        queue_waypoints.push(path_all_waypoints[i]);
+    } 
+    path_pub.publish(pub_path_waypoint);
+
     // ------------------------------------------------------
     // 等待到达目的地
     // ------------------------------------------------------
@@ -166,26 +188,38 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
         dwa_planer.setRobotPose(transform_room_robot.getOrigin().getX(), transform_room_robot.getOrigin().getY(), yaw);
           
         std::cout << "输出当前方位角" << yaw << ";  当前坐标:" << transform_room_robot.getOrigin().getX() << "," << transform_room_robot.getOrigin().getY() << ";" << std::endl;
-        // ------------------------------------------------------
+         // ------------------------------------------------------
         // 判断是否到达位置，并进行一次控制
         // ------------------------------------------------------
-        if(!dwa_planer.isArriveDestination())
-        {
-            dwa_planer.move(go_v, turn_v); // 进行一次dwa控制
-            pub_speed.linear.x = go_v;
-            pub_speed.angular.z = turn_v;
-            ROS_INFO_STREAM("go_v: " << go_v << "    turn_v: " << turn_v);
-            speed_pub.publish(pub_speed); 
+        
+        if(queue_waypoints.empty()){           //在目标点位置附近进行精确定位
+            if(!dwa_planer.isArriveDestination()){
+                dwa_planer.move(go_v, turn_v); // 进行一次dwa控制
+                pub_speed.linear.x = go_v;
+                pub_speed.angular.z = turn_v;
+                ROS_INFO_STREAM("go_v: " << go_v << "    turn_v: " << turn_v);
+                speed_pub.publish(pub_speed); 
+            }
+            else{
+                go_v = 0;
+                turn_v = 0;
+                pub_speed.linear.x = go_v;
+                pub_speed.angular.z = turn_v; 
+                speed_pub.publish(pub_speed);  
+                std::cout << "Arrvied destation！" << std::endl;
+                current_state = Waiting; // 到达目的地，当前状态为等待状态
+            } 
         }
-        else{
-            go_v = 0;
-            turn_v = 0;
-            pub_speed.linear.x = go_v;
-            pub_speed.angular.z = turn_v; 
-            speed_pub.publish(pub_speed);  
-            std::cout << "Arrvied destation！" << std::endl;
-            current_state = Waiting; // 到达目的地，当前状态为等待状态
-        } 
+        else{               //控制机器人经过路标点
+            if(!dwa_planer.isArriveWayPoint()){
+
+            }
+            else{ //更新下一个 waypoint
+
+            }
+        }
+       
+
         sleep_ms(sim_period);
         ros::spinOnce();
     } 
@@ -223,15 +257,17 @@ int main(int argc, char **argv){
     cv::FileStorage fsSettings(config_file, cv::FileStorage::READ);
 
     dwa_planer.init(config_file);
-    
+    dwa_planer.readPathWayPoint();
     arm_move_motion_client = nh.serviceClient<aubo_arm_usr::armmovemotion>("/arm_move_motion");
     
     nav_dest_point = nh.advertiseService("/nav_dest", nav_dest_res); 
     
     speed_pub = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 10);
+    path_pub = nh.advertise<geometry_msgs::PoseArray>("/path_waypoint", 50);
 
     stop_sub = nh.subscribe<std_msgs::Bool>("/stop_nav",10, &stop_nav_sub);
-
+    // sleep(4);
+    
     ros::spin();
     ROS_INFO("shutting down!");
     ros::shutdown();

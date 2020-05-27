@@ -155,6 +155,9 @@ include_directories(
 add_executable(dwa_node src/dwa_node.cpp src/dwa_planning.cpp) 
 target_link_libraries(dwa_node  ${catkin_LIBRARIES}  ${OpenCV_LIBS})
  
+add_executable(record_path_node src/record_path_node.cpp) 
+target_link_libraries(record_path_node  ${catkin_LIBRARIES}  ${OpenCV_LIBS})
+ 
 
 #############
 ## Install ##

@@ -1,5 +1,7 @@
 #include "path_plan_control/dwa_planning.h"
 
+using namespace std;
+
 DWAPlanning::DWAPlanning(){
 
 }
@@ -26,7 +28,9 @@ void DWAPlanning::init(std::string config_file_path){
     delta_yam_rate_ = fsSettings["delta_yam_rate"];
     delta_speed_ = fsSettings["delta_speed"];  
     sim_time_ =  fsSettings["sim_time"];
-
+    waypoint_position_tolerance_ = fsSettings["waypoint_position_tolerance"];  
+    waypoint_angle_tolerance_ =  fsSettings["waypoint_angle_tolerance"];
+    fsSettings["waypoint_path_file_"] >> waypoint_path_file_;
     std::cout << "\nConfigration the DWA parameters: " << std::endl << 
         "   max_acc_x: " << max_acc_x_ << std::endl << 
         "   max_speed: " << max_speed_ << std::endl << 
@@ -38,8 +42,13 @@ void DWAPlanning::init(std::string config_file_path){
         "   delta_yam_rate: " << delta_yam_rate_ << std::endl  << 
         "   delta_speed: " << delta_speed_ << std::endl  << 
         "   sim_time: " << sim_time_ << std::endl  << 
+        "   waypoint_path_file: " << waypoint_path_file_ << std::endl  << 
+        "   waypoint_position_tolerance: " << waypoint_position_tolerance_ << std::endl  << 
+        "   waypoint_angle_tolerance: " << waypoint_angle_tolerance_ << std::endl  << 
         "   max_yaw_rate: " << max_yaw_rate_ << std::endl 
         << std::endl;
+
+    // readPathWayPoint();
 } 
 
 
@@ -61,14 +70,60 @@ float DWAPlanning::getSimPeriod(){
     return sim_time_;
 }
 
+std::vector<Eigen::Vector3d> DWAPlanning::getAllPathWaypoints(){
+    return path_waypoints_;
+}
+
+
+bool DWAPlanning::readPathWayPoint(){
+    std::ifstream infile;
+    std::cout << "              ------------- 读取路径数据 ------------" << std::endl;
+    infile.open(waypoint_path_file_);
+    if (infile){
+        std::cout << "  文件打开成功！" << std::endl;
+    }
+    else{
+        std::cout << "  不能成功打开！" << std::endl;
+    }
+    // assert(infile.is_open());
+    std::string line_data; 
+    while(getline(infile,line_data))
+    {
+        waypoint_num_++;
+        std::string str_data[3];
+
+        stringstream ss_data(line_data); 
+        ss_data >> str_data[0] >> str_data[1] >> str_data[2];
+        Eigen::Vector3d temp_pose;
+        temp_pose(0) = atof(str_data[0].c_str());
+        temp_pose(1) = atof(str_data[1].c_str());
+        temp_pose(2) = atof(str_data[2].c_str());
+        path_waypoints_.push_back(temp_pose);
+        std::cout << "      读取第" << waypoint_num_ << "个路标点：" << temp_pose(0) << " " << temp_pose(1) << " " << temp_pose(2) << std::endl; 
+    }
+    infile.close();             //关闭文件输入流 
+    return true;
+}
+
+bool DWAPlanning::generateData(){
+    for(int i = 0; i < waypoint_num_; i++){
+        path_waypoints_queue_.push(path_waypoints_[i]);
+    }
+    
+}
+
 // 根据距离误差，后面还需要添加角度误差
 bool DWAPlanning::isArriveWayPoint(){ 
     double distance_err = sqrt((robot_pose_(0) - robot_waypoint_(0))*(robot_pose_(0) - robot_waypoint_(0)) +
     (robot_pose_(1) - robot_waypoint_(1))*(robot_pose_(1) - robot_waypoint_(1))); 
-    if(distance_err < distance_threshold_){      
-        return true;
+    if(distance_err > waypoint_position_tolerance_){      
+        return false;
     }
-    return false;
+    double angle_err = angle_err_calcu(robot_waypoint_(2), robot_pose_(2));//距离期望角度的偏差
+    if(distance_err > waypoint_angle_tolerance_){      
+        return false;
+    } 
+    return true;
 }
 
 bool DWAPlanning::isArriveDestination(){

@@ -8,11 +8,12 @@
  */
 
 #include <iostream>
-#include <fstream>
+#include <fstream> 
 #include <sstream>
 #include <string>
 #include <queue> 
 #include <math.h>
+#include <vector>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
 #include <visualization_msgs/Marker.h>
@@ -21,7 +22,7 @@
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-
+#include <cassert>
 
 class DWAPlanning{
 
@@ -39,13 +40,15 @@ public:
     void setDistanceThresh(double dis); 
     float getSimPeriod();
     Eigen::Vector3d robot_waypoint_; // 机器人路标点
-    
+    bool readPathWayPoint();
+    bool generateData();
+    std::vector<Eigen::Vector3d> getAllPathWaypoints();
 private:
     
     // void getWayPoint();
     // void getRobotLocalization();
-    // void setWayPointInCostmap();
-    // void getAllWayPoints();
+    // void setWayPointInCostmap(); 
+
     bool isArriveWayPoint(); 
     bool dwa_control(const cv::Mat& config_map);
     // void dwa_display(cv::Mat& config_map);
@@ -73,10 +76,16 @@ private:
     double turn_v_; 
     double delta_yam_rate_;
     double delta_speed_;
+    double waypoint_position_tolerance_;
+    double waypoint_angle_tolerance_;
     int waypoint_id_;
     long int robot_pose_id_;
     bool first_flag_;  
     Eigen::Matrix4d T_robot_waypoint_;  
     Eigen::Vector3d robot_wapoint_in_costmap_; //机器人在代价地图中的位置
-
+    std::vector<Eigen::Vector3d> path_waypoints_;
+    std::queue<Eigen::Vector3d> path_waypoints_queue_;
+    
+    int waypoint_num_;
+    std::string waypoint_path_file_;
 };
