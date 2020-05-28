@@ -44,7 +44,8 @@ public:
     Eigen::Vector3d robot_waypoint_; // 机器人路标点
     Eigen::Vector3d robot_dest_point_; // 机器人目标点
     bool readPathWayPoint();
-    bool generateData();
+    double angle_err_calcu(double dest_angle, double current_angle);
+     
     std::vector<Eigen::Vector3d> getAllPathWaypoints();
     
 private: 
@@ -58,7 +59,6 @@ private:
     // void drawArrow(cv::Mat& img, int start_x, int start_y, double theta, int arraw_length);
     Eigen::Vector3d motion(Eigen::Vector3d x, double v_head, double v_theta);
     // void calc_to_waypoint_cost();
-    double angle_err_calcu(double dest_angle, double current_angle);
     
     Eigen::Vector3d robot_pose_; // 机器人在世界中的位姿
     double distance_threshold_;

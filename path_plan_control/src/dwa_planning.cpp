@@ -102,13 +102,7 @@ bool DWAPlanning::readPathWayPoint(){
     }
     infile.close();             //关闭文件输入流 
     return true;
-}
-
-bool DWAPlanning::generateData(){
-    for(int i = 0; i < waypoint_num_; i++){
-        path_waypoints_queue_.push(path_waypoints_[i]);
-    } 
-}
+} 
 
 // 根据距离误差，后面还需要添加角度误差
 bool DWAPlanning::isArriveWayPoint(){ 
@@ -140,6 +134,7 @@ bool DWAPlanning::isArriveDestination(){
     return true;
 }
 
+ 
 
 bool DWAPlanning::move_accurate(double & go_v, double & turn_v){
     double axis_distance_err = 0.1;
@@ -161,8 +156,7 @@ bool DWAPlanning::move_accurate(double & go_v, double & turn_v){
         {
             turn_v = 0.0;
             go_v = go_speed;
-        }
-        
+        } 
     }
 
     else if( (robot_pose_(0) - robot_dest_point_(0)) < -axis_distance_err){  //x轴正方向 angle = -1.57
@@ -246,19 +240,39 @@ double DWAPlanning::angle_err_calcu(double dest_angle, double current_angle){
     
     if(
         ((dest_angle>1.57 && dest_angle < 3.142) && (current_angle<-1.57 && current_angle>-3.142)) //第三象限和第四象限
-      ||((current_angle>1.57 && current_angle < 3.142) && (dest_angle<-1.57 && dest_angle>-3.142)) //第三象限和第四象限
+      ||((current_angle>1.57 && current_angle < 3.142) && (dest_angle<-1.57 && dest_angle>-3.142)) //第四象限和第三象限
     ){
-        if(angle_err > 0){
-            angle_err = -1.0*(3.14*2-angle_err);
-        }else{
-            angle_err = 3.14*2 - angle_err;
+        if(angle_err > 0){ 
+            angle_err = 3.14*2 + angle_err;
+        }else{ 
+            angle_err = angle_err - 3.14*2;
         } 
-    } 
-    else if(angle_err > 3.14){ //对角两个象限
-        angle_err = 3.14*2 - angle_err;
     }
-    else if(angle_err < -3.14){
-        angle_err = 3.14*2 + angle_err;
+    else if(
+        ((dest_angle>1.57 && dest_angle < 3.142) && (current_angle<0.0 && current_angle>-1.57)) //第三象限和第一象限
+      ||((current_angle>1.57 && current_angle < 3.142) && (dest_angle<0.0 && dest_angle>-1.57)) //第一象限和第三象限
+    ){
+        if(angle_err > 3.14){
+            angle_err = angle_err- 3.14*2;
+        }
+        else if(angle_err < -3.14){
+            angle_err = angle_err + 3.14*2;
+        }else{
+
+        }
+    } 
+    else if(
+        ((dest_angle>0 && dest_angle < 1.57) && (current_angle<-1.57 && current_angle>-3.142)) //第二象限和第四象限
+      ||((current_angle>0 && current_angle < 1.57) && (dest_angle<-1.57 && dest_angle>-3.142)) //第四象限和第二象限
+    ){
+        if(angle_err > 3.14){
+            angle_err = angle_err- 3.14*2; // 反转
+        }
+        else if(angle_err < -3.14){ // 正转
+            angle_err = angle_err + 3.14*2;
+        }else{
+            
+        }
     }
     return angle_err;
 } 

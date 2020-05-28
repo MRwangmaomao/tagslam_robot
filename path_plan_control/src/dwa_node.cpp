@@ -38,10 +38,7 @@ enum robot_move_state {Running=0, Waiting=1};
 
 DWAPlanning dwa_planer;
 LRGBDCostMap costmaper;
-Eigen::Matrix4d robot_pose;
-Eigen::Matrix4d robot_dest;
-std::string robot_pose_topic = "/tagslam/odom/body_rig";
-std::string robot_dest_topic = "robot_dest";
+Eigen::Vector3d robot_pose;  
 ros::Publisher speed_pub; 
 ros::Publisher path_pub;
 ros::Subscriber stop_sub;
@@ -50,7 +47,8 @@ ros::ServiceClient arm_move_motion_client;
 
 int current_state = Waiting;
 float tolerance_max = 0.0;
- 
+
+// 毫秒延时
 static void sleep_ms(unsigned int secs) 
 { 
     struct timeval tval; 
@@ -59,22 +57,192 @@ static void sleep_ms(unsigned int secs)
     select(0,NULL,NULL,NULL,&tval); 
 }
 
+// 判断是否进行横向控制           
+bool isXAxisErrorCorrect(double current_x, double error_limit){
+
+    if( (dwa_planer.robot_waypoint_(0)-current_x) > error_limit || (current_x - dwa_planer.robot_waypoint_(0)) > error_limit){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+// 更新机器人位姿
+bool updateRobotPose(){
+    // ------------------------------------------------------
+    // 接收机器人在室内坐标系的TF坐标
+    // ------------------------------------------------------
+    geometry_msgs::Twist pub_speed;                 // 发送速度执行
+    tf::TransformListener listener;
+    tf::StampedTransform transform_room_robot;   //定义存放变换关系的变量 
+    try
+    {
+        //得到child_frame坐标系原点，在frame坐标系下的坐标与旋转角度
+        listener.lookupTransform("/room_frame", "/robot_base",ros::Time(0), transform_room_robot);                   
+    }
+    catch (tf::TransformException &ex)
+    {
+        ROS_ERROR("%s",ex.what());
+        ros::Duration(1.0).sleep();
+        pub_speed.linear.x = 0.0;
+        pub_speed.angular.z = 0.0; 
+        speed_pub.publish(pub_speed); 
+        return false;
+    }
+
+    // ------------------------------------------------------
+    // 更新机器人的位姿
+    // ------------------------------------------------------
+    double siny_cosp = +2.0 * (transform_room_robot.getRotation().getW() * transform_room_robot.getRotation().getZ() + 
+        transform_room_robot.getRotation().getX() * transform_room_robot.getRotation().getY());
+    double cosy_cosp = +1.0 - 2.0 * (transform_room_robot.getRotation().getY() * transform_room_robot.getRotation().getY()
+            + transform_room_robot.getRotation().getZ()  * transform_room_robot.getRotation().getZ() );
+    double yaw = atan2(siny_cosp, cosy_cosp);
+
+    dwa_planer.setRobotPose(transform_room_robot.getOrigin().getX(), transform_room_robot.getOrigin().getY(), yaw);
+    robot_pose(0) = transform_room_robot.getOrigin().getX();
+    robot_pose(1) = transform_room_robot.getOrigin().getY();
+    robot_pose(2) = yaw;
+    std::cout << "输出当前方位角" << yaw << ";  当前坐标:" << transform_room_robot.getOrigin().getX() << "," << transform_room_robot.getOrigin().getY() << ";" << std::endl;
+    return true;
+}
+
+// 横向控制   这个是一个阻塞程序，后面需要改进为线程控制
+void correctXAxisControl(){
+
+    geometry_msgs::Twist pub_speed;                 // 发送速度执行
+    double go_v = 0, turn_v = 0;
+    double angle_error = 0.0;
+    double x_axis_distance_error = 0.0;
+
+    // 需要调的参数
+    int control_period = 50; // 控制周期50ms 确保高精度控制
+    double turn_high_speed = 1.0;
+    double turn_low_speed = 0.2;
+    double go_high_speed = 0.3;
+    double go_low_speed = 0.1;
+    double turn_change_angle = 0.5;   // 旋转分段控制阈值
+    double go_change_distance = 0.05; // 直线分段控制阈值
+    double angle_accurete_control_error = 0.05; // 角度控制精度
+    double distance_accurete_control_error = 0.02; // 位移控制精度
+    // x轴朝向判断
+    double dir = 1.57;
+    if(dwa_planer.robot_waypoint_(0) > robot_pose(0)){
+        dir = -1.57;
+    }
+    
+    // 只控制机器人转x轴选旋转方向
+    while(true){
+        updateRobotPose(); 
+        angle_error = dwa_planer.angle_err_calcu(dir, robot_pose(2));
+        if(angle_error > angle_accurete_control_error){
+            if(angle_error > turn_change_angle)
+            {
+                turn_v = turn_high_speed;
+            }else{
+                turn_v = turn_low_speed;
+            }
+        }
+        else if(-angle_error > angle_accurete_control_error){
+            if(-angle_error > turn_change_angle)
+            {
+                turn_v = -turn_high_speed;
+            }else{
+                turn_v = -turn_low_speed;
+            }
+        }else{
+            std::cout << "控制机器人转x轴选旋转方向OK" << std::endl;
+            break;
+        }
+        pub_speed.linear.x = 0.0;
+        pub_speed.angular.z = turn_v; 
+        speed_pub.publish(pub_speed);
+        sleep_ms(control_period);
+    }
+
+    // 只控制机器人x轴位移误差
+    while(true){
+        updateRobotPose();
+        x_axis_distance_error = dwa_planer.robot_waypoint_(0) - robot_pose(0);
+        if(x_axis_distance_error > distance_accurete_control_error){
+            if(x_axis_distance_error > go_change_distance)
+            {
+                go_v = go_high_speed;
+            }else{
+                go_v = go_low_speed;
+            }
+        }
+        else if(-x_axis_distance_error > distance_accurete_control_error){
+            if(-x_axis_distance_error > go_change_distance)
+            {
+                go_v = -go_high_speed;
+            }else{
+                go_v = -go_low_speed;
+            }
+        }else{
+            std::cout << "控制机器人x轴位移误差OK" << std::endl; 
+            break;
+        } 
+        pub_speed.linear.x = go_v;
+        pub_speed.angular.z = 0.0;
+        speed_pub.publish(pub_speed); 
+        sleep_ms(control_period);
+        ros::spinOnce();
+    }
+
+    // 只控制机器人y轴选旋转误差
+    dir = 0;
+    if(dwa_planer.robot_waypoint_(1) < robot_pose(1)){
+        dir = 3.14;
+    }
+    while(true){
+        updateRobotPose();
+        angle_error = dwa_planer.angle_err_calcu(dir, robot_pose(0));
+        if(angle_error > angle_accurete_control_error){
+            if(angle_error > turn_change_angle)
+            {
+                turn_v = turn_high_speed;
+            }else{
+                turn_v = turn_low_speed;
+            }
+        }
+        else if(-angle_error > angle_accurete_control_error){
+            if(-angle_error > turn_change_angle)
+            {
+                turn_v = -turn_high_speed;
+            }else{
+                turn_v = -turn_low_speed;
+            }
+        }else{
+            std::cout << "控制机器人y轴选旋转误差OK" << std::endl;
+            break;
+        }
+        pub_speed.linear.x = 0.0;
+        pub_speed.angular.z = turn_v; 
+        speed_pub.publish(pub_speed);
+        sleep_ms(control_period);
+    }
+}
+
+
 void stop_nav_sub(std_msgs::Bool::ConstPtr msg){ 
         current_state = Waiting;
         std::cout << "控制机器人停止导航:" << current_state <<  "  !" <<  std::endl;  
 }
+
+
 
 bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
         path_plan_control::nav_one_point::Response &res)
 {
     // ------------------------------------------------------
     // 初始化
-    // ------------------------------------------------------
-    tf::StampedTransform transform_room_robot;   //定义存放变换关系的变量 
-    tf::TransformListener listener;
+    // ------------------------------------------------------  
     double go_v = 0, turn_v = 0;
     geometry_msgs::Twist pub_speed;                 // 发送速度执行
     int sim_period = static_cast<int>(dwa_planer.getSimPeriod() * 1000);
+    double x_axis_error = 0.2; // 大于20cm进行一次横向控制
      
     std::cout << "sim_period： " <<  sim_period << " ms." << std::endl;
     // ------------------------------------------------------
@@ -93,30 +261,7 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
         return 1;
     }  
     ROS_INFO("机械臂准备完毕。\n");
-
-    // ------------------------------------------------------
-    // 设置代价地图中的相机与机器人的相对位姿关系
-    // ------------------------------------------------------
-    // Eigen::Matrix<double, 4, 4> t_robot_kinect; 
-    // tf::StampedTransform transform_room_kinect;   //定义存放变换关系的变量 
-    // try
-    // { 
-    //     listener.lookupTransform("/robot_base", "/kinect2_rgb_optical_frame",ros::Time(1), transform_room_kinect);                   
-    // }
-    // catch (tf::TransformException &ex)
-    // {
-    //     ROS_ERROR("%s",ex.what());
-    //     ros::Duration(1.0).sleep();  
-    // }
-    // t_robot_kinect(0,3) = transform_room_kinect.getOrigin().getX();
-    // t_robot_kinect(1,3) = transform_room_kinect.getOrigin().getX();
-    // t_robot_kinect(2,3) = transform_room_kinect.getOrigin().getX();
-    // t_robot_kinect(3,3) = 1;
-    // Eigen::Quaterniond Q(transform_room_kinect.getRotation().getW(),transform_room_kinect.getRotation().getX(),transform_room_kinect.getRotation().getY(), transform_room_kinect.getRotation().getZ());
-    // t_robot_kinect.block(0,0,3,3) = Q.toRotationMatrix();
-    // std::cout << t_robot_kinect << std::endl;
-    // costmaper.setTRobotBaseKinectoptical(t_robot_kinect);
-
+ 
     // ------------------------------------------------------
     // 更新目标点 
     // ------------------------------------------------------
@@ -155,48 +300,60 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
     dwa_planer.robot_waypoint_(1) =  queue_waypoints.front()(1);  
     dwa_planer.robot_waypoint_(2) =  queue_waypoints.front()(2);  
     queue_waypoints.pop();
+
+       tf::TransformListener listener;
+    tf::StampedTransform transform_room_robot;   //定义存放变换关系的变量 
     // ------------------------------------------------------
     // 等待到达目的地
     // ------------------------------------------------------
     while(current_state == Running)
-    {   
-        // ------------------------------------------------------
-        // 接收机器人在室内坐标系的TF坐标
-        // ------------------------------------------------------
-        try
-        {
-            //得到child_frame坐标系原点，在frame坐标系下的坐标与旋转角度
-            listener.lookupTransform("/room_frame", "robot_base",ros::Time(0), transform_room_robot);                   
-        }
-        catch (tf::TransformException &ex)
-        {
-            ROS_ERROR("%s",ex.what());
-            ros::Duration(1.0).sleep();
-            pub_speed.linear.x = 0.0;
-            pub_speed.angular.z = 0.0; 
-            speed_pub.publish(pub_speed); 
-            continue;
-        }
+    {    
+        // if(!updateRobotPose()){
+        //     continue;
+        // }
+    try
+    {
+        //得到child_frame坐标系原点，在frame坐标系下的坐标与旋转角度
+        listener.lookupTransform("/room_frame", "/robot_base",ros::Time(0), transform_room_robot);                   
+    }
+    catch (tf::TransformException &ex)
+    {
+        ROS_ERROR("%s",ex.what());
+        ros::Duration(1.0).sleep();
+        pub_speed.linear.x = 0.0;
+        pub_speed.angular.z = 0.0; 
+        speed_pub.publish(pub_speed); 
+        // return false;
+        continue;
+    }
 
-        // ------------------------------------------------------
-        // 更新机器人的位姿
-        // ------------------------------------------------------
-        double siny_cosp = +2.0 * (transform_room_robot.getRotation().getW() * transform_room_robot.getRotation().getZ() + 
-            transform_room_robot.getRotation().getX() * transform_room_robot.getRotation().getY());
-        double cosy_cosp = +1.0 - 2.0 * (transform_room_robot.getRotation().getY() * transform_room_robot.getRotation().getY()
-             + transform_room_robot.getRotation().getZ()  * transform_room_robot.getRotation().getZ() );
-        double yaw = atan2(siny_cosp, cosy_cosp);
+    // ------------------------------------------------------
+    // 更新机器人的位姿
+    // ------------------------------------------------------
+    double siny_cosp = +2.0 * (transform_room_robot.getRotation().getW() * transform_room_robot.getRotation().getZ() + 
+        transform_room_robot.getRotation().getX() * transform_room_robot.getRotation().getY());
+    double cosy_cosp = +1.0 - 2.0 * (transform_room_robot.getRotation().getY() * transform_room_robot.getRotation().getY()
+            + transform_room_robot.getRotation().getZ()  * transform_room_robot.getRotation().getZ() );
+    double yaw = atan2(siny_cosp, cosy_cosp);
 
-        dwa_planer.setRobotPose(transform_room_robot.getOrigin().getX(), transform_room_robot.getOrigin().getY(), yaw);
-          
-        std::cout << "输出当前方位角" << yaw << ";  当前坐标:" << transform_room_robot.getOrigin().getX() << "," << transform_room_robot.getOrigin().getY() << ";" << std::endl;
-         // ------------------------------------------------------
+    dwa_planer.setRobotPose(transform_room_robot.getOrigin().getX(), transform_room_robot.getOrigin().getY(), yaw);
+    robot_pose(0) = transform_room_robot.getOrigin().getX();
+    robot_pose(1) = transform_room_robot.getOrigin().getY();
+    robot_pose(2) = yaw;
+    std::cout << "输出当前方位角" << yaw << ";  当前坐标:" << transform_room_robot.getOrigin().getX() << "," << transform_room_robot.getOrigin().getY() << ";" << std::endl;
+  
+        // ------------------------------------------------------
         // 判断是否到达位置，并进行一次控制
         // ------------------------------------------------------
         
         if(queue_waypoints.empty()){           //在目标点位置附近进行精确定位
             if(!dwa_planer.isArriveDestination()){
-                dwa_planer.move_accurate(go_v, turn_v); // 进行一次dwa控制
+                // dwa_planer.move_accurate(go_v, turn_v); // 进行一次dwa控制
+                // if((robot_pose(0)-dwa_planer.robot_dest_point_(0))> 0.2 || (robot_pose(0)-dwa_planer.robot_dest_point_(0))>0.2){
+                //     correctXAxisControl();
+                // }else{
+                    dwa_planer.move(go_v, turn_v); // 进行一次dwa控制
+                // }
                 pub_speed.linear.x = go_v;
                 pub_speed.angular.z = turn_v;
                 ROS_INFO_STREAM("dest go_v: " << go_v << "    turn_v: " << turn_v);
@@ -210,7 +367,11 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
         }
         else{               //控制机器人经过路标点
             if(!dwa_planer.isArriveWayPoint()){
-                dwa_planer.move(go_v, turn_v); // 进行一次dwa控制
+                // if((robot_pose(0)-dwa_planer.robot_waypoint_(0))> 0.2 || (robot_pose(0)-dwa_planer.robot_waypoint_(0))>0.2){
+                //     correctXAxisControl();
+                // }else{
+                    dwa_planer.move(go_v, turn_v); // 进行一次dwa控制
+                // }
                 pub_speed.linear.x = go_v;
                 pub_speed.angular.z = turn_v;
                 ROS_INFO_STREAM("go_v: " << go_v << "    turn_v: " << turn_v);
@@ -223,7 +384,7 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
                 queue_waypoints.pop();
                 std::cout << "更新路标点：" << dwa_planer.robot_waypoint_(0) << "  " << dwa_planer.robot_waypoint_(1) << "  " << dwa_planer.robot_waypoint_(2) << std::endl;
                 if(queue_waypoints.empty()){
-                    std::cout << "即将到达终点！" << std::endl;
+                    std::cout << "即将到达终点！" << std::endl; 
                 }
             }
         } 
