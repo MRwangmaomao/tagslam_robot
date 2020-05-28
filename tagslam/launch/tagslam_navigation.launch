@@ -22,8 +22,9 @@
   <!-- <node pkg="tf" type="static_transform_publisher" name="robot_base_to_imu_link" args="0.25 0 0.297 0 0 0  /robot_base /imu_link  100"/> --> 
 
 <node name="dwa_node" pkg="path_plan_control" type="dwa_node"
-  args="$(find path_plan_control)/config/dwa_planning.yaml" clear_params="true" output="screen" >
+  args="$(find path_plan_control)/config" clear_params="true" output="screen" >
 </node>
+
 <group if="$(arg open_rviz)"> 
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find tagslam)/example/tagslam_example.rviz" />
 </group> 

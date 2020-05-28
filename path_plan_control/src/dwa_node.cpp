@@ -31,12 +31,13 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <path_plan_control/nav_one_point.h>
 #include "path_plan_control/dwa_planning.h"
-#include "aubo_arm_usr/armmovemotion.h" 
-// #include "aubo_arm_usr/armmovemotion.h"
+#include "path_plan_control/lrgbd2xz.h"
+#include "aubo_arm_usr/armmovemotion.h"  
 
 enum robot_move_state {Running=0, Waiting=1};
 
-DWAPlanning dwa_planer; 
+DWAPlanning dwa_planer;
+LRGBDCostMap costmaper;
 Eigen::Matrix4d robot_pose;
 Eigen::Matrix4d robot_dest;
 std::string robot_pose_topic = "/tagslam/odom/body_rig";
@@ -49,43 +50,13 @@ ros::ServiceClient arm_move_motion_client;
 
 int current_state = Waiting;
 float tolerance_max = 0.0;
-
-// void robot_pose_callback(const nav_msgs::OdometryConstPtr msg){
-//     double go_v = 0, turn_v = 0;
-//     std::cout << "接受到位姿消息" << std::endl; 
-//     robot_pose(0,3) = msg->pose.pose.position.x;
-//     robot_pose(1,3) = msg->pose.pose.position.y;
-//     robot_pose(2,3) = msg->pose.pose.position.z; 
-//     Eigen::Quaterniond robot_Q(msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, 
-//         msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
-//     robot_pose.block(0,0,3,3) = robot_Q.toRotationMatrix();
-//     if(current_state == Running){                   // 移动状态
-//         if(!dwa_planer.isArriveDestination()){      // 判断是否到达
-//             ROS_INFO_STREAM("进行一次轨迹控制");
-//     //         // dwa_planer.move(0, robot_pose, go_v, turn_v);   // 未到达则进行DWA控制
-//     //         geometry_msgs::Twist pub_speed;                 // 发送速度执行
-//     //         pub_speed.linear.x = go_v;
-//     //         pub_speed.angular.z = turn_v;
-//     //         // ROS_INFO_STREAM("go_v: " << go_v <<"    turn_v: " << turn_v);
-//     //         speed_pub.publish(pub_speed); 
-//         }  
-//         else{                                        
-//             current_state = Waiting; // 到达目的地，当前状态为等待状态
-//         }  
-//     }
-// }
-static void sleep_ms(unsigned int secs)
-
-{
-
-    struct timeval tval;
-
-    tval.tv_sec=secs/1000;
-
-    tval.tv_usec=(secs*1000)%1000000;
-
-    select(0,NULL,NULL,NULL,&tval);
-
+ 
+static void sleep_ms(unsigned int secs) 
+{ 
+    struct timeval tval; 
+    tval.tv_sec=secs/1000; 
+    tval.tv_usec=(secs*1000)%1000000; 
+    select(0,NULL,NULL,NULL,&tval); 
 }
 
 void stop_nav_sub(std_msgs::Bool::ConstPtr msg){ 
@@ -124,15 +95,39 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
     ROS_INFO("机械臂准备完毕。\n");
 
     // ------------------------------------------------------
-    // 更新路标点 
+    // 设置代价地图中的相机与机器人的相对位姿关系
+    // ------------------------------------------------------
+    // Eigen::Matrix<double, 4, 4> t_robot_kinect; 
+    // tf::StampedTransform transform_room_kinect;   //定义存放变换关系的变量 
+    // try
+    // { 
+    //     listener.lookupTransform("/robot_base", "/kinect2_rgb_optical_frame",ros::Time(1), transform_room_kinect);                   
+    // }
+    // catch (tf::TransformException &ex)
+    // {
+    //     ROS_ERROR("%s",ex.what());
+    //     ros::Duration(1.0).sleep();  
+    // }
+    // t_robot_kinect(0,3) = transform_room_kinect.getOrigin().getX();
+    // t_robot_kinect(1,3) = transform_room_kinect.getOrigin().getX();
+    // t_robot_kinect(2,3) = transform_room_kinect.getOrigin().getX();
+    // t_robot_kinect(3,3) = 1;
+    // Eigen::Quaterniond Q(transform_room_kinect.getRotation().getW(),transform_room_kinect.getRotation().getX(),transform_room_kinect.getRotation().getY(), transform_room_kinect.getRotation().getZ());
+    // t_robot_kinect.block(0,0,3,3) = Q.toRotationMatrix();
+    // std::cout << t_robot_kinect << std::endl;
+    // costmaper.setTRobotBaseKinectoptical(t_robot_kinect);
+
+    // ------------------------------------------------------
+    // 更新目标点 
     // ------------------------------------------------------
     current_state = Running; //修改机器人状态
-    dwa_planer.robot_waypoint_(0) =  req.goal_x;  // 更新目标路标点
-    dwa_planer.robot_waypoint_(1) =  req.goal_y;  
-    dwa_planer.robot_waypoint_(2) =  req.goal_yaw;  
+    dwa_planer.robot_dest_point_(0) =  req.goal_x;  // 更新目标路标点
+    dwa_planer.robot_dest_point_(1) =  req.goal_y;  
+    dwa_planer.robot_dest_point_(2) =  req.goal_yaw;  
     dwa_planer.setAngleThresh(req.angle_tolerance); // 更行定位容许误差
     dwa_planer.setDistanceThresh(req.distance_tolerance); // 更行角度容许误差
-    
+     
+    costmaper.changeRobotState(current_state);
     // ------------------------------------------------------
     // 发布所有路标点
     // ------------------------------------------------------
@@ -154,10 +149,17 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
     path_pub.publish(pub_path_waypoint);
 
     // ------------------------------------------------------
+    // 更新路标点 
+    // ------------------------------------------------------
+    dwa_planer.robot_waypoint_(0) =  queue_waypoints.front()(0);   
+    dwa_planer.robot_waypoint_(1) =  queue_waypoints.front()(1);  
+    dwa_planer.robot_waypoint_(2) =  queue_waypoints.front()(2);  
+    queue_waypoints.pop();
+    // ------------------------------------------------------
     // 等待到达目的地
     // ------------------------------------------------------
     while(current_state == Running)
-    {  
+    {   
         // ------------------------------------------------------
         // 接收机器人在室内坐标系的TF坐标
         // ------------------------------------------------------
@@ -194,34 +196,39 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
         
         if(queue_waypoints.empty()){           //在目标点位置附近进行精确定位
             if(!dwa_planer.isArriveDestination()){
+                dwa_planer.move_accurate(go_v, turn_v); // 进行一次dwa控制
+                pub_speed.linear.x = go_v;
+                pub_speed.angular.z = turn_v;
+                ROS_INFO_STREAM("dest go_v: " << go_v << "    turn_v: " << turn_v);
+                speed_pub.publish(pub_speed); 
+            }
+            else{  
+                std::cout << "Arrvied destation！" << std::endl;
+                current_state = Waiting; // 到达目的地，当前状态为等待状态
+                costmaper.changeRobotState(Waiting);
+            } 
+        }
+        else{               //控制机器人经过路标点
+            if(!dwa_planer.isArriveWayPoint()){
                 dwa_planer.move(go_v, turn_v); // 进行一次dwa控制
                 pub_speed.linear.x = go_v;
                 pub_speed.angular.z = turn_v;
                 ROS_INFO_STREAM("go_v: " << go_v << "    turn_v: " << turn_v);
                 speed_pub.publish(pub_speed); 
             }
-            else{
-                go_v = 0;
-                turn_v = 0;
-                pub_speed.linear.x = go_v;
-                pub_speed.angular.z = turn_v; 
-                speed_pub.publish(pub_speed);  
-                std::cout << "Arrvied destation！" << std::endl;
-                current_state = Waiting; // 到达目的地，当前状态为等待状态
-            } 
-        }
-        else{               //控制机器人经过路标点
-            if(!dwa_planer.isArriveWayPoint()){
-
-            }
             else{ //更新下一个 waypoint
-
+                dwa_planer.robot_waypoint_(0) = queue_waypoints.front()(0);
+                dwa_planer.robot_waypoint_(1) = queue_waypoints.front()(1);
+                dwa_planer.robot_waypoint_(2) = queue_waypoints.front()(2);
+                queue_waypoints.pop();
+                std::cout << "更新路标点：" << dwa_planer.robot_waypoint_(0) << "  " << dwa_planer.robot_waypoint_(1) << "  " << dwa_planer.robot_waypoint_(2) << std::endl;
+                if(queue_waypoints.empty()){
+                    std::cout << "即将到达终点！" << std::endl;
+                }
             }
-        }
-       
-
+        } 
         sleep_ms(sim_period);
-        ros::spinOnce();
+        // ros::spinOnce();
     } 
     pub_speed.linear.x = 0.0;
     pub_speed.linear.y = 0.0;
@@ -245,19 +252,22 @@ int main(int argc, char **argv){
     ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
     std::string config_file;
     std::string dwa_file;  
- 
+    
     if(argc >=2){
         config_file = argv[1]; 
     }
     else{
         std::cout<<"args too small.\n";
         exit(0);
-    } 
-    ROS_INFO_STREAM("Setting file path is: " << config_file);
-    cv::FileStorage fsSettings(config_file, cv::FileStorage::READ);
+    }
 
-    dwa_planer.init(config_file);
+    ROS_INFO_STREAM("DWA Setting file path is: " << config_file+"/dwa_planning.yaml");
+    dwa_planer.init(config_file+"/dwa_planning.yaml");
     dwa_planer.readPathWayPoint();
+    
+    ROS_INFO_STREAM("Costmap Setting file path is: " << config_file+"/costmap.yaml");
+    costmaper.init(nh, config_file+"/costmap.yaml");
+    costmaper.changeRobotState(Waiting);
     arm_move_motion_client = nh.serviceClient<aubo_arm_usr::armmovemotion>("/arm_move_motion");
     
     nav_dest_point = nh.advertiseService("/nav_dest", nav_dest_res); 
@@ -266,7 +276,6 @@ int main(int argc, char **argv){
     path_pub = nh.advertise<geometry_msgs::PoseArray>("/path_waypoint", 50);
 
     stop_sub = nh.subscribe<std_msgs::Bool>("/stop_nav",10, &stop_nav_sub);
-    // sleep(4);
     
     ros::spin();
     ROS_INFO("shutting down!");

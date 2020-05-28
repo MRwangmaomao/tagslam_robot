@@ -152,7 +152,7 @@ include_directories(
 # )
 
 # -- dwa nede --
-add_executable(dwa_node src/dwa_node.cpp src/dwa_planning.cpp) 
+add_executable(dwa_node src/dwa_node.cpp src/dwa_planning.cpp src/lrgbd2xz.cpp) 
 target_link_libraries(dwa_node  ${catkin_LIBRARIES}  ${OpenCV_LIBS})
  
 add_executable(record_path_node src/record_path_node.cpp) 

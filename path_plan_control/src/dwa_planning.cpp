@@ -12,7 +12,6 @@ DWAPlanning::~DWAPlanning(void){
 }
 
 void DWAPlanning::init(std::string config_file_path){
-    
     waypoint_id_ = 0;
     robot_pose_id_ = 0;
     first_flag_ = true;
@@ -108,8 +107,7 @@ bool DWAPlanning::readPathWayPoint(){
 bool DWAPlanning::generateData(){
     for(int i = 0; i < waypoint_num_; i++){
         path_waypoints_queue_.push(path_waypoints_[i]);
-    }
-    
+    } 
 }
 
 // 根据距离误差，后面还需要添加角度误差
@@ -120,20 +118,20 @@ bool DWAPlanning::isArriveWayPoint(){
         return false;
     }
     double angle_err = angle_err_calcu(robot_waypoint_(2), robot_pose_(2));//距离期望角度的偏差
-    if(distance_err > waypoint_angle_tolerance_){      
+    if(angle_err > waypoint_angle_tolerance_){      
         return false;
     } 
     return true;
 }
 
 bool DWAPlanning::isArriveDestination(){
-    double distance_err = sqrt((robot_pose_(0) - robot_waypoint_(0))*(robot_pose_(0) - robot_waypoint_(0)) +
-    (robot_pose_(1) - robot_waypoint_(1))*(robot_pose_(1) - robot_waypoint_(1)));
+    double distance_err = sqrt((robot_pose_(0) - robot_dest_point_(0))*(robot_pose_(0) - robot_dest_point_(0)) +
+    (robot_pose_(1) - robot_dest_point_(1))*(robot_pose_(1) - robot_dest_point_(1)));
     if(distance_err >= distance_threshold_){      
         return false;
     }
 
-    double angle_err = angle_err_calcu(robot_waypoint_(2), robot_pose_(2));//距离期望角度的偏差
+    double angle_err = angle_err_calcu(robot_dest_point_(2), robot_pose_(2));//距离期望角度的偏差
     if(angle_err >= angle_threshold_ || angle_err <= angle_threshold_ * -1.0){      
         return false;
     }
@@ -141,11 +139,105 @@ bool DWAPlanning::isArriveDestination(){
     turn_v_ = 0.0;
     return true;
 }
- 
+
+
+bool DWAPlanning::move_accurate(double & go_v, double & turn_v){
+    double axis_distance_err = 0.1;
+    double angle_limit = 0.1;
+    double turn_speed = 0.35;
+    double go_speed = 0.08;
+    if( (robot_pose_(0) - robot_dest_point_(0)) > axis_distance_err ){  //x轴反方向  angle = 1.57
+        double angle_err = angle_err_calcu(1.57, robot_pose_(2));
+        std::cout << "x轴反方向" << std::endl;
+        if(angle_err > angle_limit){
+            turn_v = turn_speed;
+            go_v = 0.0;
+        }
+        else if(angle_err < -angle_limit){
+            turn_v = -turn_speed;
+            go_v = 0.0;
+        }
+        else // 调整好了方向
+        {
+            turn_v = 0.0;
+            go_v = go_speed;
+        }
+        
+    }
+
+    else if( (robot_pose_(0) - robot_dest_point_(0)) < -axis_distance_err){  //x轴正方向 angle = -1.57
+        double angle_err = angle_err_calcu(-1.57, robot_pose_(2));
+        std::cout << "x轴正方向" << std::endl;
+        
+        if(angle_err > angle_limit){               
+            turn_v = turn_speed;
+            go_v = 0.0;
+        }
+        else if(angle_err < -angle_limit){
+            turn_v = -turn_speed;
+            go_v = 0.0;
+        }
+        else // 调整好了方向
+        {
+            turn_v = 0.0;
+            go_v = go_speed;
+        }
+    }
+
+    else if( (robot_pose_(1) - robot_dest_point_(1)) > axis_distance_err){  //y轴反方向  angle = 3.14
+        double angle_err = angle_err_calcu(3.141, robot_pose_(2));
+        std::cout << "y轴反方向:" << angle_err << std::endl;
+        if(angle_err > angle_limit){
+            turn_v = turn_speed;
+            go_v = 0.0;
+        }
+        else if(angle_err < -angle_limit){
+            turn_v = -turn_speed;
+            go_v = 0.0;
+        }
+        else // 调整好了方向
+        {
+            turn_v = 0.0;
+            go_v = go_speed;
+        }
+    }
+
+    else if( (robot_pose_(1) - robot_dest_point_(1)) < -axis_distance_err ){  //y轴正方向  angle = 0
+        double angle_err = angle_err_calcu(0, robot_pose_(2));
+        std::cout << "y轴正方向" << std::endl;
+        if(angle_err > angle_limit){
+            turn_v = turn_speed;
+            go_v = 0.0;
+        }
+        else if(angle_err < -angle_limit){
+            turn_v = -turn_speed;
+            go_v = 0.0;
+        }
+        else // 调整好了方向
+        {
+            turn_v = 0.0;
+            go_v = go_speed;
+        }
+    }
+
+    else{ // x,y位置调整好之后, 开始调整方位
+        std::cout << "调整方位" << std::endl;
+        double angle_err = angle_err_calcu(robot_dest_point_(2), robot_pose_(2));
+        if(angle_err > 0.0){
+            turn_v = turn_speed;
+            go_v = 0.0;
+        }
+        else{
+            turn_v = -turn_speed;
+            go_v = 0.0;
+        }
+    }  
+}
+
 Eigen::Vector3d DWAPlanning::motion(Eigen::Vector3d x, double v_head, double v_theta){
-    x(0) += v_head * sim_time_ * sin(x(2));
+    x(0) -= v_head * sim_time_ * sin(x(2));
     x(1) += v_head * sim_time_ * cos(x(2));
-    x(2) = v_theta * sim_time_; 
+    x(2) += v_theta * sim_time_; 
     return x;
 }
 
@@ -156,14 +248,14 @@ double DWAPlanning::angle_err_calcu(double dest_angle, double current_angle){
         ((dest_angle>1.57 && dest_angle < 3.142) && (current_angle<-1.57 && current_angle>-3.142)) //第三象限和第四象限
       ||((current_angle>1.57 && current_angle < 3.142) && (dest_angle<-1.57 && dest_angle>-3.142)) //第三象限和第四象限
     ){
-        if(angle_err < 0){
+        if(angle_err > 0){
             angle_err = -1.0*(3.14*2-angle_err);
         }else{
             angle_err = 3.14*2 - angle_err;
         } 
     } 
     else if(angle_err > 3.14){ //对角两个象限
-        angle_err = angle_err - 3.14*2;
+        angle_err = 3.14*2 - angle_err;
     }
     else if(angle_err < -3.14){
         angle_err = 3.14*2 + angle_err;
@@ -216,7 +308,7 @@ bool DWAPlanning::dwa_control(const cv::Mat& config_map){
             else
                 turn_v_ = max_yaw_rate_; // 饱和速度
         }else{
-        turn_v_ = angle_err * 1.0 / sim_time_; // 控制速度
+            turn_v_ = angle_err * 1.0 / sim_time_; // 控制速度
         }
         if(!dir_flag)  // 反向旋转
             turn_v_ = -1.0 * turn_v_;
@@ -227,7 +319,7 @@ bool DWAPlanning::dwa_control(const cv::Mat& config_map){
     // --------------------------------------------------------------------
     else{
         double max_weight_go_speed = 0, max_weight_yaw_speed = 0;
-        std::cout << "distance_err: " << distance_err << ";" << std::endl;
+        std::cout << "位置误差: " << distance_err << ";" << "角度误差：" << angle_err << std::endl;
         double min_sim_dis = 10000;
         double temp_go, temp_turn; 
         double sim_dist = 0.0;
@@ -238,7 +330,6 @@ bool DWAPlanning::dwa_control(const cv::Mat& config_map){
         for(temp_go = -1.0* max_speed_; temp_go <= max_speed_; temp_go+=delta_speed_){
             // 角速度空间进行采样
             for(temp_turn = -1.0 * max_yaw_rate_; temp_turn <= max_yaw_rate_; temp_turn+=delta_yam_rate_){
-                
                 Eigen::Vector3d sim_pose = motion(robot_pose_, temp_go, temp_turn); // 进行一次运动学模拟
                 sim_dist = sqrt((sim_pose(0) - robot_waypoint_(0))*(sim_pose(0) - robot_waypoint_(0)) +
                             (sim_pose(1) - robot_waypoint_(1))*(sim_pose(1) - robot_waypoint_(1)));
@@ -247,8 +338,7 @@ bool DWAPlanning::dwa_control(const cv::Mat& config_map){
                     go_v_ = temp_go;
                     turn_v_ = temp_turn;
                     min_sim_dis = sim_dist;
-                }
-                
+                } 
             }
         }
 
@@ -278,4 +368,3 @@ bool DWAPlanning::move(double & go_v, double & turn_v){
     
     return false;
 }
-

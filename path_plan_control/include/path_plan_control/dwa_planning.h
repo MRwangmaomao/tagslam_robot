@@ -32,7 +32,9 @@ public:
     
     void init(std::string config_file_path); 
     bool isArriveDestination();
+    bool isArriveWayPoint(); 
     bool move(double & go_v, double & turn_v);
+    bool move_accurate(double & go_v, double & turn_v);
     // visualization_msgs::Marker dest_waypoint_pub();
     
     void setRobotPose(double x, double y, double yaw);
@@ -40,16 +42,17 @@ public:
     void setDistanceThresh(double dis); 
     float getSimPeriod();
     Eigen::Vector3d robot_waypoint_; // 机器人路标点
+    Eigen::Vector3d robot_dest_point_; // 机器人目标点
     bool readPathWayPoint();
     bool generateData();
     std::vector<Eigen::Vector3d> getAllPathWaypoints();
-private:
     
+private: 
     // void getWayPoint();
     // void getRobotLocalization();
     // void setWayPointInCostmap(); 
 
-    bool isArriveWayPoint(); 
+
     bool dwa_control(const cv::Mat& config_map);
     // void dwa_display(cv::Mat& config_map);
     // void drawArrow(cv::Mat& img, int start_x, int start_y, double theta, int arraw_length);

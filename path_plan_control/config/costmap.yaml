@@ -1,0 +1,6 @@
+%YAML:1.0
+
+groud_height: 0.02 #检测高于2cm的物体
+costmap_width: 0.30 #角加速度极大值（0.2-3.0）
+costmap_height: 0.30 #角速度极大值（0.2-3.0）
+costmap_resolution: 0.02 #栅格分辨率

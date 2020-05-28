@@ -1,0 +1,1 @@
+rosservice call /nav_dest "{goal_x: -0.053950, goal_y: -0.954546, goal_yaw: -0.031081, distance_tolerance: 0.3, angle_tolerance: 0.1}"   

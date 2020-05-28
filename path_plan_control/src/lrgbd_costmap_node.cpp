@@ -24,6 +24,7 @@
 #include <std_msgs/Bool.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <map_msgs/ProjectedMap.h>
 #include "path_plan_control/lrgbd2xz.h"
 #include "path_plan_control/dwa_planning.h"
 
@@ -41,17 +42,7 @@ ros::Publisher isArrived_pub;
 long int robot_pose_id;
 std::string all_waypoint_file;
 bool pub_waypoint_marker_flag;
-
-template<typename T>
-T getOption(ros::NodeHandle& pnh,
-                    const std::string& param_name, const T & default_val)
-{
-  T param_val;
-  pnh.param<T>(param_name, param_val, default_val);
-  return param_val;
-}
-
-
+ 
 
 void img_callback(const sensor_msgs::ImageConstPtr &depth)
 {  
