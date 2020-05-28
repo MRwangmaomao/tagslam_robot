@@ -229,9 +229,9 @@ bool DWAPlanning::move_accurate(double & go_v, double & turn_v){
 }
 
 Eigen::Vector3d DWAPlanning::motion(Eigen::Vector3d x, double v_head, double v_theta){
+    x(2) += v_theta * sim_time_;
     x(0) -= v_head * sim_time_ * sin(x(2));
     x(1) += v_head * sim_time_ * cos(x(2));
-    x(2) += v_theta * sim_time_; 
     return x;
 }
 
