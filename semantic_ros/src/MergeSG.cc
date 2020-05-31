@@ -65,8 +65,11 @@ void MergeSG::merge(std::vector<Object>& objects, cv::Mat depth, PointCloudT::Pt
      extract(objects, pclMap, clusters);// 提取3d目标=====
      std::cout << "总共发现物体数量:" << clusters.size() << std::endl;
      for(std::vector<Cluster>::iterator it = clusters.begin();
-         it != clusters.end(); ++it)
-         mpOD->addObject(*it); // 加入数据库======
+         it != clusters.end(); ++it){
+        mpOD->addObject(*it); // 加入数据库======
+        std::cout << "发现物体:" << (*it).object_name << " 位于 " << (*it).centroid << " 长宽高为 " << (*it).size << std::endl;
+    }
+         
 }
 
 

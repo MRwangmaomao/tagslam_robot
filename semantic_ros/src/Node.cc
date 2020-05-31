@@ -12,7 +12,8 @@
 #include <ros/console.h> 
 #include <iostream>
 #include <tf_conversions/tf_eigen.h>
-
+#include <rviz_visual_tools/rviz_visual_tools.h>
+#include <rviz_visual_tools/imarker_simple.h>
 
 Node::Node (ros::NodeHandle &node_handle, std::string config_file_path) {
     ROS_INFO_STREAM("Setting file path is: " << config_file_path);
@@ -55,7 +56,8 @@ Node::Node (ros::NodeHandle &node_handle, std::string config_file_path) {
       << "    package_path:" << package_path_ << std::endl
       << "    fx:" << fx_ << std::endl 
       << "    fy:" << fy_ << std::endl 
-      << "    cx:" << cx_ << std::endl;
+      << "    cx:" << cx_ << std::endl
+      << "    c:" << cy_ << std::endl;
  
     // if (publish_pointcloud_param_) {
     //   map_points_publisher_ = node_handle_.advertise<sensor_msgs::PointCloud2> (name_of_node_+"/map_points", 1); // 注册发布地图点云

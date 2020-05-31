@@ -47,6 +47,7 @@ find_package(catkin REQUIRED COMPONENTS
     image_geometry
     visualization_msgs
     pcl_ros
+    rviz_visual_tools
 )
 
 
