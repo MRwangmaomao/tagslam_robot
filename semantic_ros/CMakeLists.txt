@@ -215,12 +215,11 @@ message(${NCNN_TARGET_LIB})
 add_executable(semantic_ros_node 
    src/semantic_main.cpp 
    src/Node.cc 
-   src/SemanticNode.cpp 
-   src/System.cc 
+   src/SemanticNode.cpp  
    src/Detector.cc 
    src/RunDetect.cc
-   # src/MapDrawer.cc
-   # src/MergeSG.cc
+   src/MapDrawer.cc
+   src/MergeSG.cc
    src/ObjectDatabase.cc
    )
 

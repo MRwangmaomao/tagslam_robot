@@ -40,7 +40,7 @@ class MergeSG;
 class MapDrawer
 {
 public:
-    MapDrawer();
+    MapDrawer(double fx_, double fy_, double cx_, double cy_);
 
     ~MapDrawer();
     
@@ -64,17 +64,21 @@ public:
     
     int m_ShowOctotreeMap; // 不显示八叉树地图
 
+    // 更新 octomap====
+    void UpdateOctomap(const cv::Mat &img, const cv::Mat &dep, Eigen::Matrix4f camera_T, std::vector<Object>& objects);
+   
 protected:
      // 生成当前帧的点云，简单滤波 并 分离地面 和 非地面
      void GeneratePointCloud( 
+                             const cv::Mat &dep, Eigen::Matrix4f camera_T, 
                              pcl::PointCloud<pcl::PointXYZRGB>& ground,                  
                              pcl::PointCloud<pcl::PointXYZRGB>& nonground);
 
      // 生成当前帧的点云，简单滤波 并 分离地面 和 非地面
-     void GeneratePointCloud( 
-                             pcl::PointCloud<pcl::PointXYZRGB>& ground,                  
-                             pcl::PointCloud<pcl::PointXYZRGB>& nonground,
-                             std::vector<Object>& objects);
+     void GeneratePointCloud(const cv::Mat &img, const cv::Mat &dep, Eigen::Matrix4f camera_T, 
+                                   pcl::PointCloud<pcl::PointXYZRGB> &ground, 
+                                   pcl::PointCloud<pcl::PointXYZRGB> &nonground,
+                                   std::vector<Object> &objects);
 
      // 总octomao地图中插入，新生成的点云===
      void InsertScan(octomap::point3d sensorOrigin, 
@@ -83,38 +87,18 @@ protected:
       // 散斑??
      bool isSpeckleNode(const octomap::OcTreeKey &nKey);
      
-     // 更新 octomap====
-     void UpdateOctomap( );
-     
-     // 有高度生成颜色==
-     void heightMapColor(double h, double& r, double &g, double& b);
      
 
-
+ 
 private:
 
-// 显示 大小尺寸参数
-    float mKeyFrameSize;
-    float mKeyFrameLineWidth;
-    float mGraphLineWidth;
-    float mPointSize;
-    float mCameraSize;
-    float mCameraLineWidth;
-
-    cv::Mat mCameraPose;
-
-    std::mutex mMutexCamera;
-
-private:
-
-   // int last_obj_size;
-
-    pcl::PointCloud<pcl::PointXYZRGB> observation; // 当前帧点云===
-
-    uint16_t  lastKeyframeSize =0;// 上一次关键帧数量大小
-    
+    pcl::PointCloud<pcl::PointXYZRGB> observation;  // 当前帧点云===
+    double fx;
+    double fy;
+    double cx; 
+    double cy;
     octomap::ColorOcTree *m_octree;
-    octomap::KeyRay m_keyRay; // temp storage for casting
+    octomap::KeyRay m_keyRay;   // temp storage for casting
     octomap::OcTreeKey m_updateBBXMin;
     octomap::OcTreeKey m_updateBBXMax;
 
@@ -125,9 +109,8 @@ private:
     double m_res;// octomap 图精度
     unsigned m_treeDepth;
     unsigned m_maxTreeDepth;
-    bool bIsLocalization;
-
-
+    bool bIsLocalization; 
+    
     octomap::OcTreeKey m_paddedMinKey, m_paddedMaxKey;
     inline static void updateMinKey(const octomap::OcTreeKey&in, 
                                     octomap::OcTreeKey& min)

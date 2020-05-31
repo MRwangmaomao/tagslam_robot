@@ -11,7 +11,9 @@
 #include <ros/ros.h>
 #include <ros/console.h> 
 #include <iostream>
- 
+#include <tf_conversions/tf_eigen.h>
+
+
 Node::Node (ros::NodeHandle &node_handle, std::string config_file_path) {
     ROS_INFO_STREAM("Setting file path is: " << config_file_path);
     it_ = std::shared_ptr<image_transport::ImageTransport>(new image_transport::ImageTransport(node_handle));
@@ -34,31 +36,45 @@ Node::Node (ros::NodeHandle &node_handle, std::string config_file_path) {
     fsSettings["color_img_topic"] >> color_img_topic_;
     fsSettings["depth_img_topic"] >> depth_img_topic_; 
     fsSettings["package_path"] >> package_path_;
-
+    fsSettings["fx"] >> fx_;
+    fsSettings["fy"] >> fy_;
+    fsSettings["cx"] >> cx_;
+    fsSettings["cy"] >> cy_;
+    Eigen::Vector3d base2camera_p(-0.028,0.250,1.395);
+    Eigen::Quaterniond base2camera_q(0.952,0.015,0.005,-0.307); 
+    
+    base2camera_T_.block(0,0,3,3) = base2camera_q.toRotationMatrix(); 
+    base2camera_T_(0,3) = base2camera_p(0);
+    base2camera_T_(1,3) = base2camera_p(1);
+    base2camera_T_(2,3) = base2camera_p(2);
+    base2camera_T_(3,3) = 1.0; 
+    // std::cout << base2camera_T_ << std::endl << std::endl;
     std::cout << "  semantic ros 载入模型参数如下所示:" << std::endl 
       << "    color_img_topic:" << color_img_topic_ << std::endl 
       << "    depth_img_topic:" << depth_img_topic_ << std::endl 
-      << "    package_path:" << package_path_ << std::endl;
-
-      // semantic_system_ = std::shared_ptr<Semantic_ros::System>(new Semantic_ros::System(package_path_)); // 初始化slam系统
-    // fsSettings["camera_frame_id_param"] >> camera_frame_id_param_;   
-
+      << "    package_path:" << package_path_ << std::endl
+      << "    fx:" << fx_ << std::endl 
+      << "    fy:" << fy_ << std::endl 
+      << "    cx:" << cx_ << std::endl;
+ 
     // if (publish_pointcloud_param_) {
     //   map_points_publisher_ = node_handle_.advertise<sensor_msgs::PointCloud2> (name_of_node_+"/map_points", 1); // 注册发布地图点云
     // }
    mpRunDetect = std::make_shared<Semantic_ros::RunDetect>( package_path_ );
+   mpMapDrawer = new Semantic_ros::MapDrawer(fx_, fy_, cx_, cy_);//地图显示
 }
  
 Node::~Node () { 
-
+    delete mpMapDrawer;
 }
  
-void  Node::RGBDCalculate(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp){
-  // imshow("1",im);
-  // cvWaitKey(30);
-    // semantic_system_->TrackRGBD(im, depthmap, timestamp);
-    mpRunDetect->Run(im);
+void  Node::RGBDCalculate(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp, Eigen::Matrix4f T_room_camera_f){
+    
+    std::vector<Semantic_ros::Object> objects = mpRunDetect->Run(im);
+    mpMapDrawer->UpdateOctomap(im, depthmap, T_room_camera_f, objects);
+    
 }
+
 
 
 bool Node::Update(ros::Time current_stamp) {

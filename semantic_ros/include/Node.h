@@ -16,7 +16,7 @@
 #include <ros/ros.h>
 #include <ros/time.h>
 #include <image_transport/image_transport.h>
-#include <tf/transform_broadcaster.h>
+
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/core/core.hpp>
 #include <std_msgs/Bool.h>
@@ -28,9 +28,11 @@
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/PointCloud.h>
-#include <geometry_msgs/PoseStamped.h>
-// #include <System.h>
+#include <geometry_msgs/PoseStamped.h> 
+
 #include "RunDetect.h" // 目标检测运行线程====
+#include "MapDrawer.h"   // 显示地图类
+
 class Node
 {
   public:
@@ -39,18 +41,21 @@ class Node
 
   protected:
     bool Update (ros::Time current_stamp); // 更新ros topic  
-    void RGBDCalculate(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp); //接收信息并进行处理
+    void RGBDCalculate(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp, Eigen::Matrix4f T_room_camera_f); //接收信息并进行处理
  
     ros::Time current_frame_time_;
     std::string color_img_topic_;
     std::string depth_img_topic_;
     std::string package_path_;
-    
+    Eigen::Matrix4d base2camera_T_;
   private:
     void PublishRenderedImage (cv::Mat image);
     std::shared_ptr< Semantic_ros::RunDetect > mpRunDetect;         // 目标检测运行线程
-    // std::shared_ptr<Semantic_ros::System> semantic_system_; // 定义语义识别系统 
-
+    Semantic_ros::MapDrawer* mpMapDrawer;
+    double fx_;
+    double fy_;
+    double cx_;
+    double cy_; 
     // void PublishMapPoints (std::vector<ORB_SLAM2::MapPoint*> map_points);
     // void PublishPositionAsTransform (cv::Mat position);
     // void PublishPositionAsPoseStamped(cv::Mat position);

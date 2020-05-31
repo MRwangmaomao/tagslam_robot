@@ -2,9 +2,12 @@
 color_img_topic: /kinect2/qhd/image_color_rect
 depth_img_topic: /kinect2/qhd/image_depth_rect
 package_path: /home/scjy/code/catkin_tagslam/src/semantic_ros/
+fx: 571.8319822931295
+cx: 436.7418038692657
+fy: 568.5477678366276
+cy: 259.9872860050479
+
 groud_height: 0.02 #检测高于2cm的物体
 costmap_width: 0.30 #角加速度极大值（0.2-3.0）
 costmap_height: 0.30 #角速度极大值（0.2-3.0）
-costmap_resolution: 0.02 #栅格分辨率
-Translation: [-0.028, 0.250, 1.395]
-Rotation: [0.952, 0.015, 0.005, -0.307]
+costmap_resolution: 0.02 #栅格分辨率 

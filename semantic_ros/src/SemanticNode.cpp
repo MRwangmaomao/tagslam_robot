@@ -50,8 +50,47 @@ void SemanticNode::ImageCallback (const sensor_msgs::ImageConstPtr& msgRGB, cons
 
   current_frame_time_ = msgRGB->header.stamp;
 
+  Eigen::Matrix4d T_room_camera_d;
+  Eigen::Matrix4f T_room_camera_f;
+   
+  try
+  {
+      //得到child_frame坐标系原点，在frame坐标系下的坐标与旋转角度
+      listener_.lookupTransform("/room_frame", "/robot_base",ros::Time(0), transform_room_robot_);                   
+  }
+  catch (tf::TransformException &ex)
+  {
+      ROS_ERROR("%s",ex.what());
+      // ros::Duration(1.0).sleep(); 
+  } 
   
-  RGBDCalculate(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec()); // 主要处理程序入口
+  Eigen::Matrix4d T_room_robot(Eigen::Matrix4d::Identity());   
+  T_room_robot(0,3) = transform_room_robot_.getOrigin().getX(); 
+  T_room_robot(1,3) = transform_room_robot_.getOrigin().getY(); 
+  T_room_robot(2,3) = transform_room_robot_.getOrigin().getZ(); 
+  Eigen::Quaterniond q_room_robot; 
+  q_room_robot.w() = static_cast<double>(transform_room_robot_.getRotation().getW());
+  q_room_robot.x() = static_cast<double>(transform_room_robot_.getRotation().getX());
+  q_room_robot.y() = static_cast<double>(transform_room_robot_.getRotation().getY());
+  q_room_robot.z() = static_cast<double>(transform_room_robot_.getRotation().getZ());
+  // std::cout << q_room_robot.w()  << " " << q_room_robot.x()  << std::endl << std::endl;
+  
+  T_room_robot.block(0,0,3,3) = q_room_robot.toRotationMatrix();
+  // std::cout <<"T_room_robot: " << T_room_robot << std::endl;
+  T_room_camera_d = T_room_robot*base2camera_T_;
+  for(int i = 0; i < 16; i++)
+    T_room_camera_f(i) = T_room_camera_d(i);
+  //  std::cout <<"T_room_camera_f: " <<  T_room_camera_f << std::endl;
+  
+  
+  // tf::TransformBroadcaster br;
+  
+  // br.sendTransform(tf::StampedTransform(tf::Transform(
+  //                   tf::Quaternion(0,0,0,1),
+  //                   tf::Vector3(T_room_camera_d(0,3),T_room_camera_d(1,3),T_room_camera_d(2,3))
+  //               ), ros::Time::now(), "room_frame", "camera_semantic"));
+
+  RGBDCalculate(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec(), T_room_camera_f); // 主要处理程序入口
   
   // if(Update(cv_ptrRGB->header.stamp)){   // 发布ROS消息话题
   //   std::cout << "关闭ROS系统!" << std::endl; 

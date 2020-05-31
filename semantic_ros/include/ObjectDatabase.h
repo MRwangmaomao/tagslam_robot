@@ -5,9 +5,7 @@
 
 #ifndef OBJECTDATABASE_H
 #define OBJECTDATABASE_H
-
-#include "System.h"
-
+  
 #include <Eigen/Core>
 #include <vector>
 #include <string>

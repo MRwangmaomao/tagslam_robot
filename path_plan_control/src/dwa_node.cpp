@@ -301,7 +301,7 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
     dwa_planer.robot_waypoint_(2) =  queue_waypoints.front()(2);  
     queue_waypoints.pop();
 
-       tf::TransformListener listener;
+    tf::TransformListener listener;
     tf::StampedTransform transform_room_robot;   //定义存放变换关系的变量 
     // ------------------------------------------------------
     // 等待到达目的地
@@ -311,36 +311,36 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
         // if(!updateRobotPose()){
         //     continue;
         // }
-    try
-    {
-        //得到child_frame坐标系原点，在frame坐标系下的坐标与旋转角度
-        listener.lookupTransform("/room_frame", "/robot_base",ros::Time(0), transform_room_robot);                   
-    }
-    catch (tf::TransformException &ex)
-    {
-        ROS_ERROR("%s",ex.what());
-        ros::Duration(1.0).sleep();
-        pub_speed.linear.x = 0.0;
-        pub_speed.angular.z = 0.0; 
-        speed_pub.publish(pub_speed); 
-        // return false;
-        continue;
-    }
+        try
+        {
+            //得到child_frame坐标系原点，在frame坐标系下的坐标与旋转角度
+            listener.lookupTransform("/room_frame", "/robot_base",ros::Time(0), transform_room_robot);                   
+        }
+        catch (tf::TransformException &ex)
+        {
+            ROS_ERROR("%s",ex.what());
+            ros::Duration(1.0).sleep();
+            pub_speed.linear.x = 0.0;
+            pub_speed.angular.z = 0.0; 
+            speed_pub.publish(pub_speed); 
+            // return false;
+            continue;
+        }
 
-    // ------------------------------------------------------
-    // 更新机器人的位姿
-    // ------------------------------------------------------
-    double siny_cosp = +2.0 * (transform_room_robot.getRotation().getW() * transform_room_robot.getRotation().getZ() + 
-        transform_room_robot.getRotation().getX() * transform_room_robot.getRotation().getY());
-    double cosy_cosp = +1.0 - 2.0 * (transform_room_robot.getRotation().getY() * transform_room_robot.getRotation().getY()
-            + transform_room_robot.getRotation().getZ()  * transform_room_robot.getRotation().getZ() );
-    double yaw = atan2(siny_cosp, cosy_cosp);
+        // ------------------------------------------------------
+        // 更新机器人的位姿
+        // ------------------------------------------------------
+        double siny_cosp = +2.0 * (transform_room_robot.getRotation().getW() * transform_room_robot.getRotation().getZ() + 
+            transform_room_robot.getRotation().getX() * transform_room_robot.getRotation().getY());
+        double cosy_cosp = +1.0 - 2.0 * (transform_room_robot.getRotation().getY() * transform_room_robot.getRotation().getY()
+                + transform_room_robot.getRotation().getZ()  * transform_room_robot.getRotation().getZ() );
+        double yaw = atan2(siny_cosp, cosy_cosp);
 
-    dwa_planer.setRobotPose(transform_room_robot.getOrigin().getX(), transform_room_robot.getOrigin().getY(), yaw);
-    robot_pose(0) = transform_room_robot.getOrigin().getX();
-    robot_pose(1) = transform_room_robot.getOrigin().getY();
-    robot_pose(2) = yaw;
-    std::cout << "输出当前方位角" << yaw << ";  当前坐标:" << transform_room_robot.getOrigin().getX() << "," << transform_room_robot.getOrigin().getY() << ";" << std::endl;
+        dwa_planer.setRobotPose(transform_room_robot.getOrigin().getX(), transform_room_robot.getOrigin().getY(), yaw);
+        robot_pose(0) = transform_room_robot.getOrigin().getX();
+        robot_pose(1) = transform_room_robot.getOrigin().getY();
+        robot_pose(2) = yaw;
+        std::cout << "输出当前方位角" << yaw << ";  当前坐标:" << transform_room_robot.getOrigin().getX() << "," << transform_room_robot.getOrigin().getY() << ";" << std::endl;
   
         // ------------------------------------------------------
         // 判断是否到达位置，并进行一次控制
