@@ -1,14 +1,12 @@
 /*
- * @Author: 王培荣
+ * @Author: 南山二毛
  * @Date: 2020-01-02 15:22:49
  * @LastEditTime : 2020-01-03 23:57:42
  * @LastEditors  : Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: /catkin_ws/src/orbslam_semantic_nav_ros/orbslam/include/Detector.h
- */
-/* This file is part of ORB-SLAM2-SSD-Semantic.
-* 2d目标检测
-*/
+ * @Description: This file is part of SSD-Semantic.  2d目标检测
+ * @FilePath: /catkin_tagslam/src/semantic_ros/include/Detector.h
+ */ 
+
 #ifndef DETECTOR_H
 #define DETECTOR_H
 

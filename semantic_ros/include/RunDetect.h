@@ -1,15 +1,11 @@
 /*
- * @Author: 王培荣
+ * @Author: 南山二毛
  * @Date: 2019-12-29 10:10:42
  * @LastEditTime : 2020-01-04 00:03:47
  * @LastEditors  : Please set LastEditors
- * @Description: In User Settings Edit
+ * @Description: 运行目标检测 的类
  * @FilePath: /catkin_ws/src/orbslam_semantic_nav_ros/orbslam/include/RunDetect.h
- */
-/**
-* This file is part of ORB-SLAM2.
-* 运行目标检测 的类
-*/
+ */ 
 
 #ifndef RUNDETECT_H
 #define RUNDETECT_H
@@ -31,7 +27,7 @@ class RunDetect
 {
 
 public: 
-    std::vector<Object>  Run(const cv::Mat& im);// 线程运行函数====
+    std::vector<Object>  Run(const cv::Mat& im, cv::Mat& image_detect);// 线程运行函数====
     RunDetect(std::string filePath);
     ~RunDetect();
     std::shared_ptr<Detector> mDetector;// 目标检测对象====

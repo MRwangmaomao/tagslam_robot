@@ -1,7 +1,12 @@
-/* This file is part of ORB-SLAM2-SSD-Semantic.
- * 语义目标数据库=======
- * 添加，删除，融合目标数据
- */
+/*
+ * @Author: 南山二毛
+ * @Date: 2019-12-29 11:18:52
+ * @LastEditTime : 2020-05-28 21:18:16
+ * @LastEditors  : 南山二毛
+ * @Description: 添加，删除，融合目标数据
+ * @FilePath: /catkin_tagslam/src/semantic_ros/include/ObjectDatabase.h
+ */ 
+  
 
 #ifndef OBJECTDATABASE_H
 #define OBJECTDATABASE_H

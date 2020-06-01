@@ -24,7 +24,18 @@ int main(int argc, char** argv){
     ros::NodeHandle nh; 
     ROS_INFO("------------------------start semantic ros------------------------------"); 
     SemanticNode semantic_node(nh, argv[1]);
-    ros::spin();
+     tf::TransformBroadcaster br; 
+  
+    ros::Rate r(3); // 10 hz
+    while (ros::ok())
+    { 
+        // br.sendTransform(tf::StampedTransform(tf::Transform(
+        //             tf::Quaternion(0.951, 0.016, 0.006, -0.308),
+        //             tf::Vector3(-0.028,0.250,1.395)) , ros::Time::now(), "room_frame", "camera_semantic"));
+        semantic_node.Update();
+        ros::spinOnce();     //轮转一次,返回
+        r.sleep();        //休眠
+    } 
     ros::shutdown();
     ROS_INFO("------------------------end semantic ros------------------------------");
     return 0;

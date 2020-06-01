@@ -11,8 +11,13 @@
     时 间 : 2020.05.20
  
 ---------------------------------
-  
+   
+## 0 编译方式 
+
+    catkin build
+
 ------------------------------------
+ 
 
 ## 1 如何启动
 
@@ -22,6 +27,9 @@ roslaunch tagslam tagslam_navigation.launch
 ```
 ![](doc/tagslam1.png)
 ![](doc/tagslam2.png)
+![](doc/detect1.png)
+
+
 ------------------------------------
 
 ## 2 程序包功能说明
@@ -37,6 +45,8 @@ apriltag标签识别功能包：[apriltag](https://github.com/MRwangmaomao/tagsl
 taglsam定位包：[tagslam](https://github.com/MRwangmaomao/tagslam_robot/tree/master/tagslam)
 
 路径规划和轨迹控制：[path_plan_control](https://github.com/MRwangmaomao/tagslam_robot/tree/master/path_plan_control)
+
+目标检测和3D测量：[semantic_ros](https://github.com/MRwangmaomao/tagslam_robot/tree/master/semantic_ros)
 
 测试：[tagslam_test](https://github.com/MRwangmaomao/tagslam_robot/tree/master/tagslam_test)
 

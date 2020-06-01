@@ -1,9 +1,19 @@
-/*2d & 3d 融合算法
-点云 多平面分割、聚类
-反向投影获取点晕团的2d框
-和目标检测2d框 匹配
-获取每个点云团的类别信息，以及3d边框信息
-返回 cluster 数组信息
+/*
+ * @Author: 南山二毛
+ * @Date: 2020-01-02 15:22:49
+ * @LastEditTime : 2020-01-03 23:57:42
+ * @LastEditors  : Please set LastEditors
+ * @Description:  2d & 3d 融合算法
+ *                点云 多平面分割、聚类
+ *                反向投影获取点晕团的2d框
+ *                和目标检测2d框 匹配
+ *                获取每个点云团的类别信息，以及3d边框信息
+ *                返回 cluster 数组信息
+ * @FilePath: /catkin_tagslam/src/semantic_ros/include/MergeSG.h
+ */ 
+
+
+/*
 
 */
 
@@ -106,7 +116,7 @@ public:
   /** Default destructor */
   ~MergeSG();
 
-  void merge(std::vector<Object>& objects, cv::Mat depth, PointCloudT::Ptr pclMap);
+  void merge(std::vector<Object>& objects, cv::Mat depth, PointCloudT::Ptr pclMap, std::vector<Cluster> &clusters);
 // 计算 点云 坐标，3d 包围盒
 
 // 目标数据库=====

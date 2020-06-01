@@ -72,29 +72,17 @@ void SemanticNode::ImageCallback (const sensor_msgs::ImageConstPtr& msgRGB, cons
   q_room_robot.w() = static_cast<double>(transform_room_robot_.getRotation().getW());
   q_room_robot.x() = static_cast<double>(transform_room_robot_.getRotation().getX());
   q_room_robot.y() = static_cast<double>(transform_room_robot_.getRotation().getY());
-  q_room_robot.z() = static_cast<double>(transform_room_robot_.getRotation().getZ());
-  // std::cout << q_room_robot.w()  << " " << q_room_robot.x()  << std::endl << std::endl;
+  q_room_robot.z() = static_cast<double>(transform_room_robot_.getRotation().getZ()); 
   
-  T_room_robot.block(0,0,3,3) = q_room_robot.toRotationMatrix();
-  // std::cout <<"T_room_robot: " << T_room_robot << std::endl;
-  T_room_camera_d = T_room_robot*base2camera_T_;
+  T_room_robot.block(0,0,3,3) = q_room_robot.toRotationMatrix(); 
+  // T_room_camera_d = T_room_robot*base2camera_T_;
   for(int i = 0; i < 16; i++)
-    T_room_camera_f(i) = T_room_camera_d(i);
+      T_room_camera_f(i) = base2camera_T_(i);
   //  std::cout <<"T_room_camera_f: " <<  T_room_camera_f << std::endl;
   
-  
-  // tf::TransformBroadcaster br;
-  
-  // br.sendTransform(tf::StampedTransform(tf::Transform(
-  //                   tf::Quaternion(0,0,0,1),
-  //                   tf::Vector3(T_room_camera_d(0,3),T_room_camera_d(1,3),T_room_camera_d(2,3))
-  //               ), ros::Time::now(), "room_frame", "camera_semantic"));
+ 
 
-  RGBDCalculate(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec(), T_room_camera_f); // 主要处理程序入口
-  
-  // if(Update(cv_ptrRGB->header.stamp)){   // 发布ROS消息话题
-  //   std::cout << "关闭ROS系统!" << std::endl; 
-  // }
+  RGBDCalculate(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec(), T_room_camera_f); // 主要处理程序入口 
 }
 
 

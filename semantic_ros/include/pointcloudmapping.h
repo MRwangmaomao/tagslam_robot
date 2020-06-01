@@ -1,14 +1,11 @@
 /*
- * @Author: your name
+ * @Author: 南山二毛
  * @Date: 2019-12-29 10:10:42
  * @LastEditTime : 2019-12-31 17:33:48
  * @LastEditors  : Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /catkin_ws/src/orbslam_semantic_nav_ros/orbslam/include/pointcloudmapping.h
- */
-/*
- *
- */
+ */ 
 
 #ifndef POINTCLOUDMAPPING_H
 #define POINTCLOUDMAPPING_H

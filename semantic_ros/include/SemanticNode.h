@@ -49,4 +49,4 @@ class SemanticNode : public Node
     tf::StampedTransform transform_room_robot_;   //定义存放变换关系的变量 
 };
 
-#endif //ORBSLAM2_ROS_RGBDODE_H_
+#endif //Semantic_ROS_RGBDODE_H_

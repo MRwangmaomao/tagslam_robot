@@ -35,100 +35,9 @@ MapDrawer::~MapDrawer()
    delete m_octree; 
 }
 
-  
-// // 设置当前帧 相机姿======================================
-// void MapDrawer::SetCurrentCameraPose(const cv::Mat &Tcw)
-// {
-//     unique_lock<mutex> lock(mMutexCamera);
-//     mCameraPose = Tcw.clone();
-// }
-
-// // 获取相机位姿=============cv::mat===========================
-// bool MapDrawer::GetCurrentCameraPos(cv::Mat &Rcw, cv::Mat  &Ow)
-// {
-//     bool  flag = false;
-//     if(!mCameraPose.empty())
-//     {
-//         unique_lock<mutex> lock(mMutexCamera);
-//         Rcw = mCameraPose.rowRange(0,3).colRange(0,3);
-//         Ow  = -Rcw.t()*mCameraPose.rowRange(0,3).col(3);
-//         flag = true;
-//     }
-
-//     return flag;
-// }
- 
-  
-// 在RVIZ中显示 数据库中的目标物体====
-void MapDrawer::DrawObject()
-{
-    std::vector<Cluster>& Clusters = mpMerge2d3d->mpOD->mClusters;
-    int objnumber = Clusters.size(); // 目标数据库大小
-  
-  if( objnumber >0)
-  { 
-    //std::cout<< "OD size: " << objnumber << std::endl;
-    for(int m=0; m<objnumber; m++)
-    {
-        Cluster & cluster = Clusters[m];// 一个目标物体
-        Eigen::Vector3f size  = cluster.size;     // 尺寸
-        Eigen::Vector3f cent  = cluster.centroid; //中心点
-
-//         // 长方体，8个顶点，12条线段
-//         glBegin(GL_LINES); // 线段=======
-//         glLineWidth(5);    // 线宽======
-//         std::string name = cluster.object_name;
-//         glRasterPos3f(cent(0), cent(1), cent(2)); 
-        
-        cv::Scalar color =  mpMerge2d3d->mpOD->getObjectColor(cluster.class_id); // 定义的物体颜色
-//         glColor3f(color.val[0]/255.0, color.val[1]/255.0, color.val[2]/255.0);
-        
-//         // 12条线段 =============================================
-//         // 上面 4
-//         glVertex3f(cent[0]+size[0]/2.0,cent[1]-size[1]/2.0,cent[2]+size[2]/2.0);//
-//         glVertex3f(cent[0]-size[0]/2.0,cent[1]-size[1]/2.0,cent[2]+size[2]/2.0);//
-
-//         glVertex3f(cent[0]-size[0]/2.0,cent[1]-size[1]/2.0,cent[2]+size[2]/2.0);//
-//         glVertex3f(cent[0]-size[0]/2.0,cent[1]+size[1]/2.0,cent[2]+size[2]/2.0);//
-
-//         glVertex3f(cent[0]-size[0]/2.0,cent[1]+size[1]/2.0,cent[2]+size[2]/2.0);//
-//         glVertex3f(cent[0]+size[0]/2.0,cent[1]+size[1]/2.0,cent[2]+size[2]/2.0);//
-
-//         glVertex3f(cent[0]+size[0]/2.0,cent[1]+size[1]/2.0,cent[2]+size[2]/2.0);//
-//         glVertex3f(cent[0]+size[0]/2.0,cent[1]-size[1]/2.0,cent[2]+size[2]/2.0);//
-//         // 一周 4
-//         glVertex3f(cent[0]+size[0]/2.0,cent[1]-size[1]/2.0,cent[2]+size[2]/2.0);//
-//         glVertex3f(cent[0]+size[0]/2.0,cent[1]-size[1]/2.0,cent[2]-size[2]/2.0);//
-
-//         glVertex3f(cent[0]-size[0]/2.0,cent[1]-size[1]/2.0,cent[2]+size[2]/2.0);//
-//         glVertex3f(cent[0]-size[0]/2.0,cent[1]-size[1]/2.0,cent[2]-size[2]/2.0);//
-
-//         glVertex3f(cent[0]-size[0]/2.0,cent[1]+size[1]/2.0,cent[2]+size[2]/2.0);//
-//         glVertex3f(cent[0]-size[0]/2.0,cent[1]+size[1]/2.0,cent[2]-size[2]/2.0);//
-
-//         glVertex3f(cent[0]+size[0]/2.0,cent[1]+size[1]/2.0,cent[2]+size[2]/2.0);//
-//         glVertex3f(cent[0]+size[0]/2.0,cent[1]+size[1]/2.0,cent[2]-size[2]/2.0);//
-//         // 底面 4
-//         glVertex3f(cent[0]+size[0]/2.0,cent[1]-size[1]/2.0,cent[2]-size[2]/2.0);//
-//         glVertex3f(cent[0]-size[0]/2.0,cent[1]-size[1]/2.0,cent[2]-size[2]/2.0);//
-
-//         glVertex3f(cent[0]-size[0]/2.0,cent[1]-size[1]/2.0,cent[2]-size[2]/2.0);//
-//         glVertex3f(cent[0]-size[0]/2.0,cent[1]+size[1]/2.0,cent[2]-size[2]/2.0);//
-
-//         glVertex3f(cent[0]-size[0]/2.0,cent[1]+size[1]/2.0,cent[2]-size[2]/2.0);//
-//         glVertex3f(cent[0]+size[0]/2.0,cent[1]+size[1]/2.0,cent[2]-size[2]/2.0);//
-
-//         glVertex3f(cent[0]+size[0]/2.0,cent[1]+size[1]/2.0,cent[2]-size[2]/2.0);//
-//         glVertex3f(cent[0]+size[0]/2.0,cent[1]-size[1]/2.0,cent[2]-size[2]/2.0);//
-
-//         glEnd();
-    }
-  }  
-}
-
-
+    
 // // // 更新octomap======
-void MapDrawer::UpdateOctomap(const cv::Mat &img, const cv::Mat &dep, Eigen::Matrix4f camera_T, std::vector<Object>& objects)
+void MapDrawer::UpdateOctomap(const cv::Mat &img, const cv::Mat &dep, Eigen::Matrix4f camera_T, std::vector<Object>& objects,  std::vector<Cluster>& clusters)
 {    
     pcl::PointCloud<pcl::PointXYZRGB>  ground; // 地面点云
     pcl::PointCloud<pcl::PointXYZRGB>  nonground;// 无地面点云
@@ -137,7 +46,7 @@ void MapDrawer::UpdateOctomap(const cv::Mat &img, const cv::Mat &dep, Eigen::Mat
     // 使用另一个线程 对关键帧进行 2d目标检测
  
     if(objects.size()>0)
-        GeneratePointCloud(img, dep, camera_T, ground, nonground, objects);// 生成点云
+        GeneratePointCloud(img, dep, camera_T, ground, nonground, objects, clusters);// 生成点云
     else 
         GeneratePointCloud(dep, camera_T, ground, nonground);// 生成点云
     
@@ -146,23 +55,7 @@ void MapDrawer::UpdateOctomap(const cv::Mat &img, const cv::Mat &dep, Eigen::Mat
             octomap::point3d( camera_T(0,3), camera_T(1,3), camera_T(2,3));// 点云原点
 
     //     InsertScan(sensorOrigin, ground, nonground);// 将新点云 插入到 octomap地图中====
-    } 
- 
-
-//   if(m_ShowOctotreeMap){
-//     octomap::ColorOcTree::tree_iterator it  = m_octree->begin_tree();
-//     octomap::ColorOcTree::tree_iterator end = m_octree->end_tree();
-//     int counter = 0;// 计数
-//     double occ_thresh = 0.8; // 概率阈值 原来 0.9  越大，显示的octomap格子越少
-//     int level = 16; // 八叉树地图 深度???
-//     glClearColor(1.0f,1.0f,1.0f,1.0f);// 颜色 + 透明度
-
-//     glDisable(GL_LIGHTING);
-//     glEnable (GL_BLEND);
-
-//     ////DRAW OCTOMAP BEGIN//////
-//     // double stretch_factor = 128/(1 - occ_thresh); //1280.0
-//     // occupancy range in which the displayed cubes can be
+    }  
  
 }
 
@@ -304,7 +197,8 @@ void MapDrawer::GeneratePointCloud(
 void MapDrawer::GeneratePointCloud(const cv::Mat &img, const cv::Mat &dep, Eigen::Matrix4f camera_T, 
                                    pcl::PointCloud<pcl::PointXYZRGB> &ground, 
                                    pcl::PointCloud<pcl::PointXYZRGB> &nonground,
-                                   std::vector<Object>& objects)    // 传入2d检测结果
+                                   std::vector<Object>& objects,
+                                   std::vector<Cluster>& merge_clusters)    // 传入2d检测结果
 {
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
     cloud->resize(dep.rows * dep.cols);
@@ -318,7 +212,7 @@ void MapDrawer::GeneratePointCloud(const cv::Mat &img, const cv::Mat &dep, Eigen
             float d = double(dep.ptr<unsigned short>(m)[n])/1000.0;// 深度 m为单位 保留0～2m内的点
             
             //if (d < 0.01 || d>2.0) // 相机测量范围 0.5～6m
-            if (d < 0.02 || d>100.0) // 相机测量范围 0.5～6m
+            if (d < 0.4 || d>6.0) // 相机测量范围 0.5～6m
             {
                 
                 continue;
@@ -343,14 +237,14 @@ void MapDrawer::GeneratePointCloud(const cv::Mat &img, const cv::Mat &dep, Eigen
     pcl::transformPointCloud( *cloud, *temp, camera_T);
 
 // 3d目标信息获取=====
-    mpMerge2d3d->merge(objects, dep, temp);
+    mpMerge2d3d->merge(objects, dep, temp, merge_clusters);
 
-    std::vector<Cluster>& Clusters = mpMerge2d3d->mpOD->mClusters;
-    int objnumber = Clusters.size(); // 目标数据库大小
-    std::cout<< "OD size: " << objnumber << std::endl;
+    std::vector<Cluster>& clusters = mpMerge2d3d->mpOD->mClusters;
+    int objnumber = clusters.size(); // 目标数据库大小
+    // std::cout<< "OD size: " << objnumber << std::endl;
     for( int m=0; m<objnumber; m++)
     {
-      Cluster & cluster = Clusters[m];// 一个目标物体
+      Cluster & cluster = clusters[m];// 一个目标物体
       Eigen::Vector3f size  = cluster.size;     // 尺寸
       Eigen::Vector3f cent  = cluster.centroid; //中心点
 
@@ -469,108 +363,6 @@ void MapDrawer::GeneratePointCloud(const cv::Mat &img, const cv::Mat &dep, Eigen
 }
 
 
-
-
-// // 将新点云 插入到 octomap地图中====
-// void MapDrawer::InsertScan(octomap::point3d sensorOrigin,  // 点云原点
-//                            pcl::PointCloud<pcl::PointXYZRGB> &ground, //地面
-//                            pcl::PointCloud<pcl::PointXYZRGB> &nonground)// 无地面
-// {
-
-// // 坐标转换到 key???
-//     if(!m_octree->coordToKeyChecked(sensorOrigin, m_updateBBXMin)||
-//         !m_octree->coordToKeyChecked(sensorOrigin, m_updateBBXMax))
-//      {
-//             printf("coulde not generate key for origin\n");
-//      }
-
-//      octomap::KeySet free_cells, occupied_cells;// 空闲格子，占有格子
-
-// // 每一个 地面 点云=======================
-//      for(auto p:ground.points)
-//      {
-//         octomap::point3d point(p.x, p.y, p.z);
-//         // only clear space (ground points)
-//         if(m_octree->computeRayKeys(sensorOrigin, point, m_keyRay))
-//         {
-//              free_cells.insert(m_keyRay.begin(), m_keyRay.end()); // 地面为空闲格子======
-//              m_octree->averageNodeColor(p.x, p.y, p.z, p.r,p.g, p.b);//颜色
-//         }
-//         octomap::OcTreeKey endKey;
-//         if(m_octree->coordToKeyChecked(point, endKey))
-//         {
-//               updateMinKey(endKey, m_updateBBXMin);
-//               updateMaxKey(endKey, m_updateBBXMax);
-//          }
-//         else
-//         {
-//               printf("could not generator key for endpoint");
-//         }
-//      }
-
-// // 无地面点云====================================
-// // all other points : free on ray, occupied on endpoings:
-//      for(auto p:nonground.points)
-//      {
-//          octomap::point3d point(p.x, p.y, p.z);
-//          //free cell
-//          if(m_octree->computeRayKeys(sensorOrigin, point, m_keyRay))
-//          {
-//             // free_cells.insert(m_keyRay.begin(),m_keyRay.end()); // 非空闲
-//          }
-//          //occupided endpoint
-//          octomap::OcTreeKey key;
-//          if(m_octree->coordToKeyChecked(point, key))
-//          {
-//              occupied_cells.insert(key); // 占有格子======
-//              updateMinKey(key, m_updateBBXMin);
-//              updateMaxKey(key, m_updateBBXMax);
-//              m_octree->averageNodeColor(p.x, p.y, p.z, p.r,p.g, p.b);
-//          }
-
-//      }
-
-//    //  pcl::PointCloud<pcl::PointXYZRGB>observation;
-
-// // 空闲格子====
-//      for(octomap::KeySet::iterator it = free_cells.begin(), 
-//                                    end= free_cells.end(); 
-//                                    it!=end; ++it)
-//      {
-//          if(occupied_cells.find(*it) == occupied_cells.end())// 占有格子未找到====
-//          {
-//              m_octree->updateNode(*it, false);// 空闲格子====
-//          }
-//      }
-// // 占有格子====
-//      for(octomap::KeySet::iterator it = occupied_cells.begin(), 
-//                                    end= occupied_cells.end(); 
-//                                    it!=end; ++it)
-//      {
-//          m_octree->updateNode(*it, true);// 占有格子====
-//      }
-
-//      m_octree->prune();
-// }
  
-
-// // 保存地图为octomap=====
-// void MapDrawer::SaveOctoMap(const char *filename)
-// {
-//     std::ofstream outfile(filename, std::ios_base::out | std::ios_base::binary);
-//     if (outfile.is_open())
-//     {
-//         m_octree->write(outfile);
-//         outfile.close();
-//         cerr << "OctoMap: saved " << endl;
-//     }
-// }
-// // 载入octomap=====
-// void MapDrawer::LoadOctoMap(std::string folder_path)
-// { 
-//     octomap::AbstractOcTree* tree = octomap::AbstractOcTree::read(folder_path + "octomap.ot");
-//     m_octree= dynamic_cast<octomap::ColorOcTree*> (tree);
-// }
-
 
 } //namespace Semantic_ros

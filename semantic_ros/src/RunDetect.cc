@@ -27,20 +27,17 @@ RunDetect::~RunDetect()
 }
  
  
-std::vector<Object> RunDetect::Run(const cv::Mat& im)
-{
-    if(mDisplayDetect){
-        cv::namedWindow("2D Detect");
-    }
-    
+std::vector<Object> RunDetect::Run(const cv::Mat& im, cv::Mat& image_detect)
+{ 
     std::vector<Object> vobject;
     mDetector->Run(im, vobject); 
     if(vobject.size()>0)
     {
         mDetector->Show(im,vobject);
         if(mDisplayDetect){
-            cv::imshow("2D Detect", mDetector->Show(im,vobject));
-            cvWaitKey(20);
+            image_detect = mDetector->Show(im,vobject);
+            // cv::imshow("2D Detect", mDetector->Show(im,vobject));
+            // cvWaitKey(20);
         }  
     }
     return vobject; 

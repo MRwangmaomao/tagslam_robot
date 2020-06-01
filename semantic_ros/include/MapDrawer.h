@@ -1,8 +1,12 @@
-/**
-* This file is part of ORB-SLAM2.
-* 地图的可视化
-*/
-
+/*
+ * @Author: 南山二毛
+ * @Date: 2019-12-29 11:18:52
+ * @LastEditTime : 2020-05-28 21:18:16
+ * @LastEditors  : 南山二毛
+ * @Description: 地图的可视化和3D目标分割
+ * @FilePath: /catkin_tagslam/src/semantic_ros/include/MapDrawer.h
+ */ 
+ 
 #ifndef MAPDRAWER_H
 #define MAPDRAWER_H
  
@@ -65,7 +69,7 @@ public:
     int m_ShowOctotreeMap; // 不显示八叉树地图
 
     // 更新 octomap====
-    void UpdateOctomap(const cv::Mat &img, const cv::Mat &dep, Eigen::Matrix4f camera_T, std::vector<Object>& objects);
+    void UpdateOctomap(const cv::Mat &img, const cv::Mat &dep, Eigen::Matrix4f camera_T, std::vector<Object>& objects, std::vector<Cluster>& clusters);
    
 protected:
      // 生成当前帧的点云，简单滤波 并 分离地面 和 非地面
@@ -78,7 +82,7 @@ protected:
      void GeneratePointCloud(const cv::Mat &img, const cv::Mat &dep, Eigen::Matrix4f camera_T, 
                                    pcl::PointCloud<pcl::PointXYZRGB> &ground, 
                                    pcl::PointCloud<pcl::PointXYZRGB> &nonground,
-                                   std::vector<Object> &objects);
+                                   std::vector<Object> &objects, std::vector<Cluster>& merge_clusters);
 
      // 总octomao地图中插入，新生成的点云===
      void InsertScan(octomap::point3d sensorOrigin, 
