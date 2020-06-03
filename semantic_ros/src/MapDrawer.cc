@@ -70,20 +70,40 @@ void MapDrawer::GeneratePointCloud(
     {
         for ( int n=0; n<(dep.cols); n+=1 )//每一列
         {
-            float d = dep.ptr<float>(m)[n];// 深度 m为单位 保留0～2m内的点
+            // float d = dep.ptr<float>(m)[n];// 深度 m为单位 保留0～2m内的点
+            // //if (d < 0.01 || d>2.0) // 相机测量范围 0.5～6m
+            // if (d < 0.50 || d>3.0) // 相机测量范围 0.5～6m
+            //     continue;
+            // pcl::PointXYZRGB p;
+            // p.z = d;
+            // p.x = ( n - cx) * p.z / fx;
+            // p.y = ( m - cy) * p.z / fy;
+            // if(p.y<-3.0 || p.y>3.0) continue;// 保留 垂直方向 -3～3m范围内的点 
+            // // p.b = dep.ptr<uchar>(m)[n*3+0];// 点颜色=====
+            // // p.g = dep.ptr<uchar>(m)[n*3+1];
+            // // p.r = dep.ptr<uchar>(m)[n*3+2];
+            // cloud->points.push_back( p ); 
+            // // std::cout << p << std::endl;
+            float d = double(dep.ptr<unsigned short>(m)[n])/1000.0;// 深度 m为单位 保留0～2m内的点
+            
             //if (d < 0.01 || d>2.0) // 相机测量范围 0.5～6m
-            if (d < 0.50 || d>3.0) // 相机测量范围 0.5～6m
+            if (d < 0.4 || d>6.0) // 相机测量范围 0.5～6m
+            {
+                
                 continue;
-            pcl::PointXYZRGB p;
-            p.z = d;
-            p.x = ( n - cx) * p.z / fx;
-            p.y = ( m - cy) * p.z / fy;
-            if(p.y<-3.0 || p.y>3.0) continue;// 保留 垂直方向 -3～3m范围内的点 
-            p.b = dep.ptr<uchar>(m)[n*3+0];// 点颜色=====
-            p.g = dep.ptr<uchar>(m)[n*3+1];
-            p.r = dep.ptr<uchar>(m)[n*3+2];
-            cloud->points.push_back( p ); 
-            // std::cout << p << std::endl;
+            }
+            // std::cout << d << "   ";
+                
+            //float z = d;
+            float y = ( m - cy) * d / fy;
+            if(y<-3.0 || y>3.0) continue;// 保留 垂直方向 -3～3m范围内的点 
+            int ind = m * dep.cols + n;// 总索引
+            cloud->points[ind].z = d;
+            cloud->points[ind].x = ( n - cx) * d / fx;
+            cloud->points[ind].y = y;
+            // cloud->points[ind].b = img.ptr<uchar>(m)[n*3+0];// 点颜色=====
+            // cloud->points[ind].g = img.ptr<uchar>(m)[n*3+1];
+            // cloud->points[ind].r = img.ptr<uchar>(m)[n*3+2]; 
         }
     }
 // 体素格滤波======

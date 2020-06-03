@@ -16,7 +16,7 @@ void Node::trigger_voice_sub(std_msgs::Bool::ConstPtr msg){
 Node::Node (ros::NodeHandle &node_handle, std::string config_file_path) {
     ROS_INFO_STREAM("Setting file path is: " << config_file_path);
     it_ = std::shared_ptr<image_transport::ImageTransport>(new image_transport::ImageTransport(node_handle));
-    trigger_voice_sub_ = node_handle.subscribe<std_msgs::Bool>("/trigger_voice",10, boost::bind(&Node::trigger_voice_sub, this, _1)); // 接收语音出发消息
+    trigger_voice_sub_ = node_handle.subscribe<std_msgs::Bool>("/trigger_voice",10, boost::bind(&Node::trigger_voice_sub, this, _1)); // 接收语音出发消息 调用成员函数作为回调函数,使用bind方法
     rendered_image_publisher_ = it_->advertise ("/rendered_debug_image", 1);// 注册发布调试图像
     voice_string_pub_ = node_handle.advertise<std_msgs::String>("/voiceWords", 1); // 注册发布语音消息
     pub_voice_flag_ = false;
