@@ -237,7 +237,7 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
         path_plan_control::nav_one_point::Response &res)
 {
     // ------------------------------------------------------
-    // 初始化
+    // step1 初始化
     // ------------------------------------------------------  
     double go_v = 0, turn_v = 0;
     geometry_msgs::Twist pub_speed;                 // 发送速度执行
@@ -245,8 +245,9 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
     double x_axis_error = 0.2; // 大于20cm进行一次横向控制
      
     std::cout << "sim_period： " <<  sim_period << " ms." << std::endl;
+
     // ------------------------------------------------------
-    // 移动机械臂和kinect到达寻路状态
+    // step2 移动机械臂和kinect到达寻路状态
     // ------------------------------------------------------
     aubo_arm_usr::armmovemotion arm_move_motion_srv;
     arm_move_motion_srv.request.move_state = 1;
@@ -263,7 +264,7 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
     ROS_INFO("机械臂准备完毕。\n");
  
     // ------------------------------------------------------
-    // 更新目标点 
+    // step3 更新目标点 
     // ------------------------------------------------------
     current_state = Running; //修改机器人状态
     dwa_planer.robot_dest_point_(0) =  req.goal_x;  // 更新目标路标点
@@ -274,7 +275,7 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
      
     costmaper.changeRobotState(current_state);
     // ------------------------------------------------------
-    // 发布所有路标点
+    // step4 发布所有路标点
     // ------------------------------------------------------
     std::queue<Eigen::Vector3d> queue_waypoints;
     std::vector<Eigen::Vector3d> path_all_waypoints = dwa_planer.getAllPathWaypoints();
@@ -294,7 +295,7 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
     path_pub.publish(pub_path_waypoint);
 
     // ------------------------------------------------------
-    // 更新路标点 
+    // step5 更新第一个路标点 
     // ------------------------------------------------------
     dwa_planer.robot_waypoint_(0) =  queue_waypoints.front()(0);   
     dwa_planer.robot_waypoint_(1) =  queue_waypoints.front()(1);  
@@ -303,17 +304,22 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
 
     tf::TransformListener listener;
     tf::StampedTransform transform_room_robot;   //定义存放变换关系的变量 
+
     // ------------------------------------------------------
-    // 等待到达目的地
+    // step6 等待到达目的地
     // ------------------------------------------------------
     while(current_state == Running)
     {    
         // if(!updateRobotPose()){
         //     continue;
         // }
+
+        // ------------------------------------------------------
+        // step6.1 得到当前机器人在世界中的坐标
+        // ------------------------------------------------------
         try
         {
-            //得到child_frame坐标系原点，在frame坐标系下的坐标与旋转角度
+            // 得到child_frame坐标系原点，在frame坐标系下的坐标与旋转角度
             listener.lookupTransform("/room_frame", "/robot_base",ros::Time(0), transform_room_robot);                   
         }
         catch (tf::TransformException &ex)
@@ -328,7 +334,7 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
         }
 
         // ------------------------------------------------------
-        // 更新机器人的位姿
+        // step6.2 计算的到2D平面的坐标, 更新机器人的位姿
         // ------------------------------------------------------
         double siny_cosp = +2.0 * (transform_room_robot.getRotation().getW() * transform_room_robot.getRotation().getZ() + 
             transform_room_robot.getRotation().getX() * transform_room_robot.getRotation().getY());
@@ -343,51 +349,57 @@ bool nav_dest_res(path_plan_control::nav_one_point::Request &req,
         std::cout << "输出当前方位角" << yaw << ";  当前坐标:" << transform_room_robot.getOrigin().getX() << "," << transform_room_robot.getOrigin().getY() << ";" << std::endl;
   
         // ------------------------------------------------------
-        // 判断是否到达位置，并进行一次控制
-        // ------------------------------------------------------
-        
-        if(queue_waypoints.empty()){           //在目标点位置附近进行精确定位
-            if(!dwa_planer.isArriveDestination()){
-                // dwa_planer.move_accurate(go_v, turn_v); // 进行一次dwa控制
-                // if((robot_pose(0)-dwa_planer.robot_dest_point_(0))> 0.2 || (robot_pose(0)-dwa_planer.robot_dest_point_(0))>0.2){
-                //     correctXAxisControl();
-                // }else{
-                    dwa_planer.move(go_v, turn_v); // 进行一次dwa控制
-                // }
-                pub_speed.linear.x = go_v;
-                pub_speed.angular.z = turn_v;
-                ROS_INFO_STREAM("dest go_v: " << go_v << "    turn_v: " << turn_v);
-                speed_pub.publish(pub_speed); 
+        // step6.3 判断是否到达位置，并进行一次控制
+        // ------------------------------------------------------ 
+        if(!dwa_planer.isArriveDestination()){    // 优先判断是否到达终点
+            if(queue_waypoints.empty()){          // 前面的位置点都已经走完   
+                if(!dwa_planer.isArriveDestination()){  //在目标点位置附近进行精确定位
+                    // dwa_planer.move_accurate(go_v, turn_v); // 进行一次dwa控制
+                    // if((robot_pose(0)-dwa_planer.robot_dest_point_(0))> 0.2 || (robot_pose(0)-dwa_planer.robot_dest_point_(0))>0.2){
+                    //     correctXAxisControl();
+                    // }else{
+                        dwa_planer.move(go_v, turn_v); // 进行一次dwa控制
+                    // }
+                    pub_speed.linear.x = go_v;
+                    pub_speed.angular.z = turn_v;
+                    ROS_INFO_STREAM("dest go_v: " << go_v << "    turn_v: " << turn_v);
+                    speed_pub.publish(pub_speed); 
+                }
+                else{  
+                    std::cout << "Arrvied destation！" << std::endl;
+                    current_state = Waiting; // 到达目的地，当前状态为等待状态
+                    costmaper.changeRobotState(Waiting);
+                } 
             }
-            else{  
-                std::cout << "Arrvied destation！" << std::endl;
-                current_state = Waiting; // 到达目的地，当前状态为等待状态
-                costmaper.changeRobotState(Waiting);
+            else{               //控制机器人经过路标点
+                if(!dwa_planer.isArriveWayPoint()){
+                    // if((robot_pose(0)-dwa_planer.robot_waypoint_(0))> 0.2 || (robot_pose(0)-dwa_planer.robot_waypoint_(0))>0.2){
+                    //     correctXAxisControl();
+                    // }else{
+                        dwa_planer.move(go_v, turn_v); // 进行一次dwa控制
+                    // }
+                    pub_speed.linear.x = go_v;
+                    pub_speed.angular.z = turn_v;
+                    ROS_INFO_STREAM("go_v: " << go_v << "    turn_v: " << turn_v);
+                    speed_pub.publish(pub_speed); 
+                }
+                else{ //更新下一个 waypoint
+                    dwa_planer.robot_waypoint_(0) = queue_waypoints.front()(0);
+                    dwa_planer.robot_waypoint_(1) = queue_waypoints.front()(1);
+                    dwa_planer.robot_waypoint_(2) = queue_waypoints.front()(2);
+                    queue_waypoints.pop();
+                    std::cout << "更新路标点：" << dwa_planer.robot_waypoint_(0) << "  " << dwa_planer.robot_waypoint_(1) << "  " << dwa_planer.robot_waypoint_(2) << std::endl;
+                    if(queue_waypoints.empty()){
+                        std::cout << "即将到达终点！" << std::endl; 
+                    }
+                }
             } 
         }
-        else{               //控制机器人经过路标点
-            if(!dwa_planer.isArriveWayPoint()){
-                // if((robot_pose(0)-dwa_planer.robot_waypoint_(0))> 0.2 || (robot_pose(0)-dwa_planer.robot_waypoint_(0))>0.2){
-                //     correctXAxisControl();
-                // }else{
-                    dwa_planer.move(go_v, turn_v); // 进行一次dwa控制
-                // }
-                pub_speed.linear.x = go_v;
-                pub_speed.angular.z = turn_v;
-                ROS_INFO_STREAM("go_v: " << go_v << "    turn_v: " << turn_v);
-                speed_pub.publish(pub_speed); 
-            }
-            else{ //更新下一个 waypoint
-                dwa_planer.robot_waypoint_(0) = queue_waypoints.front()(0);
-                dwa_planer.robot_waypoint_(1) = queue_waypoints.front()(1);
-                dwa_planer.robot_waypoint_(2) = queue_waypoints.front()(2);
-                queue_waypoints.pop();
-                std::cout << "更新路标点：" << dwa_planer.robot_waypoint_(0) << "  " << dwa_planer.robot_waypoint_(1) << "  " << dwa_planer.robot_waypoint_(2) << std::endl;
-                if(queue_waypoints.empty()){
-                    std::cout << "即将到达终点！" << std::endl; 
-                }
-            }
-        } 
+        else{ // 到达终点
+            std::cout << "Arrvied destation！" << std::endl;
+            current_state = Waiting; // 到达目的地，当前状态为等待状态
+            costmaper.changeRobotState(Waiting);
+        }
         sleep_ms(sim_period);
         // ros::spinOnce();
     } 
