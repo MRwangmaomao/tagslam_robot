@@ -4,7 +4,7 @@
 #
 # example usage:
 #
-# rosrun tagslam plot_corners.py -t 1541778008.167207032 1541778008.217120032 1541778008.316867032
+# rosrun tagslam plot_corners.py -t 1591773607.838283539 
 #
 
 import numpy as np
@@ -41,8 +41,8 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots()
     for i in range(va.shape[0]):
-        ax.scatter(va[i,4]-args.cx, args.cx-va[i,5], color=col[va[i,0]])
+        ax.scatter(va[i,4]-args.cx, va[i,5], color=col[va[i,0]])
         ax.annotate("%d:%d:%d" % (int(va[i,1]), int(va[i,2]),
-                                  int(va[i,3])), (va[i,4], -va[i,5]))
+                                  int(va[i,3])), (va[i,4], va[i,5]))
     ax.set_aspect('equal', adjustable='box')
     plt.show()
